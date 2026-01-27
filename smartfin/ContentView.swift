@@ -1,61 +1,110 @@
-//
-//  ContentView.swift
-//  smartfin
-//
-//  Created by Brent Brewster on 1/22/26.
-//
-
 import SwiftUI
-import SwiftData
+import CoreBluetooth
+import Observation
 
-struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+struct Device: Identifiable {
+    let id: UUID
+    let name: String
+    let p: CBPeripheral
+}
 
-    var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
-        }
+@MainActor @Observable
+final class BluetoothManager: NSObject { // Added colon here
+    var state: CBManagerState = .unknown
+    var scanning = false
+    var devices: [Device] = []
+    var connected: String? = nil
+    
+    private var central: CBCentralManager!
+    
+    override init() {
+        super.init()
+        // Initialize central after super.init
+        central = CBCentralManager(delegate: self, queue: nil)
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
+    
+    func scan() {
+        guard state == .poweredOn else { return }
+        devices.removeAll()
+        connected = nil
+        central.scanForPeripherals(withServices: nil)
+        scanning = true
     }
+    
+    func stop() {
+        central.stopScan()
+        scanning = false
+    }
+    
+    func connect(_ d: Device) {
+        central.connect(d.p)
+    }
+}
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+extension CBManagerState {
+    var title: String {
+        switch self {
+        case .unknown: return "Unknown"
+        case .resetting: return "Resetting"
+        case .unsupported: return "Unsupported"
+        case .unauthorized: return "Unauthorized"
+        case .poweredOff: return "Powered Off"
+        case .poweredOn: return "Powered On"
+        @unknown default: return "New State"
         }
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+// Ensure delegate methods match exactly
+extension BluetoothManager: CBCentralManagerDelegate {
+    
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        self.state = central.state
+    }
+    
+    func centralManager(_ central: CBCentralManager, didDiscover p: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
+        let name = (advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? p.name ?? "(no name)"
+        let d = Device(id: p.identifier, name: name, p: p)
+        if !devices.contains(where: { $0.id == d.id }) {
+            devices.append(d)
+        }
+    }
+    
+    // Fixed typo: didconnect -> didConnect
+    func centralManager(_ central: CBCentralManager, didConnect p: CBPeripheral) {
+        connected = p.name ?? p.identifier.uuidString
+        stop()
+    }
+}
+
+struct ContentView: View {
+    @State private var ble = BluetoothManager()
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("State: \(ble.state.title)")
+                Spacer()
+                if let c = ble.connected {
+                    Text("Connected: \(c)").foregroundStyle(.green)
+                }
+            }
+            
+            Button(ble.scanning ? "Stop" : "Scan") {
+                ble.scanning ? ble.stop() : ble.scan()
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(ble.state != .poweredOn)
+            
+            List(ble.devices) { d in
+                HStack {
+                    Text(d.name)
+                    Spacer()
+                    Button("Connect") { ble.connect(d) }
+                        .buttonStyle(.bordered)
+                }
+            }
+        }
+        .padding()
+    }
 }
