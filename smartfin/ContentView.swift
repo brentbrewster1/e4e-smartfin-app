@@ -6,25 +6,62 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Spacer()
             
-            // --- LOGO REPLACES TEXT HERE ---
-            Image("SmartfinLogo")  // Make sure this matches the name in Assets exactly!
-                .resizable()       // Allows the image to be resized
-                .scaledToFit()     // Keeps the logo proportions correct
-                .frame(width: 300) // Adjusts the width (change this number to make it bigger/smaller)
-                .padding(.top, 20)
-                .colorInvert()
+            // --- LOGO ---
+            Image("SmartfinLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 250)
+                .padding(.top, 40)
             
-            // Show current connection status
+            // --- CONNECTION STATUS ---
             Text(bleManager.connectionStatus)
                 .font(.headline)
-                .foregroundColor(.gray)
-                .padding(.bottom, 20)
+                .foregroundColor(bleManager.connectionStatus.contains("Connected to") ? .green : .gray)
+            
+            // --- DATA LOG WINDOW ---
+            VStack(alignment: .leading, spacing: 5) {
+                Text("LIVE DATA STREAM")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal)
+                
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 4) {
+                            if bleManager.dataLog.isEmpty {
+                                Text("Waiting for data...")
+                                    .font(.system(.caption, design: .monospaced))
+                                    .foregroundColor(.gray)
+                            } else {
+                                ForEach(Array(bleManager.dataLog.enumerated()), id: \.offset) { index, message in
+                                    Text(message)
+                                        .font(.system(.caption, design: .monospaced)) // Terminal-style font
+                                        .foregroundColor(.green)
+                                        .id(index) // Used for auto-scrolling
+                                }
+                            }
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(height: 250) // Adjust this to make the window taller/shorter
+                    .background(Color.black.opacity(0.85))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                    // Auto-scroll to bottom when new data arrives
+                    .onChange(of: bleManager.dataLog.count) { _ in
+                        withAnimation {
+                            proxy.scrollTo(bleManager.dataLog.count - 1, anchor: .bottom)
+                        }
+                    }
+                }
+            }
             
             Spacer()
             
-            // BUTTON TO OPEN MENU
+            // --- CONNECT BUTTON ---
             Button(action: {
                 showBluetoothMenu = true
             }) {
@@ -32,18 +69,18 @@ struct ContentView: View {
                     Image(systemName: "wifi")
                     Text("Find Smartfin Device")
                 }
+                .font(.headline)
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(Color.teal)
+                .background(Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }
             .padding(.horizontal)
+            .padding(.bottom, 20)
             .sheet(isPresented: $showBluetoothMenu) {
                 BluetoothListView(bleManager: bleManager)
             }
-            
-            Spacer().frame(height: 20)
         }
     }
 }
