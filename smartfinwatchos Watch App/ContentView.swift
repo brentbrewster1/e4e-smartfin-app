@@ -9,96 +9,159 @@ import SwiftUI
 import CoreBluetooth
 
 struct ContentView: View {
-    // Initialize your shared BluetoothManager here
-    @StateObject var bluetoothManager = BluetoothManager()
+    @StateObject var bluetoothManager: BluetoothManager
+    @State private var showSessionFlow = false
+
+    init(bluetoothManager: BluetoothManager = BluetoothManager()) {
+        _bluetoothManager = StateObject(wrappedValue: bluetoothManager)
+    }
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                if bluetoothManager.isConnected {
+                    // Once connected, show the session flow
+                    SessionFlowView()
+                        .environmentObject(bluetoothManager)
+                } else {
+                    // Show connection interface
+                    ConnectionView(bluetoothManager: bluetoothManager)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Connection View
+struct ConnectionView: View {
+    @ObservedObject var bluetoothManager: BluetoothManager
     
     var body: some View {
         VStack {
-            // 1. If we are already connected, show the success state
-            if bluetoothManager.connectionStatus.contains("Connected") {
-                VStack(spacing: 12) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.title)
-                        .foregroundColor(.green)
-                    Text(bluetoothManager.connectionStatus)
-                        .font(.headline)
-                        .multilineTextAlignment(.center)
-                }
-                .padding()
-                
+            if bluetoothManager.discoveredPeripherals.isEmpty {
+                // Searching state
+                SearchingView(status: bluetoothManager.connectionStatus)
+            } else if bluetoothManager.discoveredPeripherals.count == 1 {
+                // Single device - simple button
+                SingleDeviceView(
+                    device: bluetoothManager.discoveredPeripherals.first!,
+                    onConnect: { device in
+                        bluetoothManager.connect(to: device)
+                    }
+                )
             } else {
-                // 2. If not connected, handle the discovery logic
-                handleDiscoveryState()
+                // Multiple devices - show list
+                MultipleDevicesView(
+                    devices: bluetoothManager.discoveredPeripherals,
+                    onConnect: { device in
+                        bluetoothManager.connect(to: device)
+                    }
+                )
             }
         }
         .onAppear {
-            // Ensure scanning starts when the view loads
-            // (Your manager starts scanning automatically in init, but good to be safe)
-             if bluetoothManager.centralManager.state == .poweredOn {
-                 bluetoothManager.centralManager.scanForPeripherals(withServices: nil, options: nil)
-             }
+            if bluetoothManager.centralManager?.state == .poweredOn {
+                bluetoothManager.startScanning()
+            }
         }
     }
+}
+
+// MARK: - Searching View
+struct SearchingView: View {
+    let status: String
     
-    // This function handles the "Switch" logic you asked for
-    @ViewBuilder
-    func handleDiscoveryState() -> some View {
-        if bluetoothManager.discoveredPeripherals.isEmpty {
-            // CASE 0: No devices found yet
-            VStack(spacing: 8) {
-                ProgressView()
-                    .tint(.blue)
-                Text(bluetoothManager.connectionStatus) // "Searching..."
-                    .font(.caption2)
-                    .foregroundColor(.gray)
-            }
+    var body: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                .scaleEffect(1.2)
             
-        } else if bluetoothManager.discoveredPeripherals.count == 1 {
-            // CASE 1: EXACTLY ONE DEVICE (The "Simple Button")
-            if let device = bluetoothManager.discoveredPeripherals.first {
-                Button(action: {
-                    bluetoothManager.connect(to: device)
-                }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "wave.3.left.circle.fill")
-                            .font(.title2)
-                        Text("Connect to")
-                            .font(.caption2)
-                            .textCase(.uppercase)
-                        Text(device.name ?? "Smartfin")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.blue)
-            }
+            Text(status)
+                .font(.caption)
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+    }
+}
+
+// MARK: - Single Device View
+struct SingleDeviceView: View {
+    let device: CBPeripheral
+    let onConnect: (CBPeripheral) -> Void
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer()
             
-        } else {
-            // CASE 2: MULTIPLE DEVICES (The "Dropdown/List")
-            VStack {
-                Text("Select Smartfin")
+            Image(systemName: "water.waves.and.arrow.down")
+                .font(.system(size: 50))
+                .foregroundColor(.blue)
+            
+            VStack(spacing: 4) {
+                Text("Connect to")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.gray)
+                    .textCase(.uppercase)
                 
-                List(bluetoothManager.discoveredPeripherals, id: \.identifier) { device in
-                    Button(action: {
-                        bluetoothManager.connect(to: device)
-                    }) {
-                        HStack {
-                            Text(device.name ?? "Unknown Fin")
-                                .fontWeight(.medium)
-                            Spacer()
-                            Image(systemName: "link")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        }
+                Text(device.name ?? "SmartFin")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            }
+            
+            Spacer()
+            
+            Button(action: { onConnect(device) }) {
+                Text("Connect")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.blue)
+        }
+        .padding()
+    }
+}
+
+// MARK: - Multiple Devices View
+struct MultipleDevicesView: View {
+    let devices: [CBPeripheral]
+    let onConnect: (CBPeripheral) -> Void
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("Select SmartFin")
+                .font(.caption)
+                .foregroundColor(.gray)
+                .padding(.top)
+            
+            List(devices, id: \.identifier) { device in
+                Button(action: { onConnect(device) }) {
+                    HStack {
+                        Image(systemName: "water.waves")
+                            .foregroundColor(.blue)
+                        
+                        Text(device.name ?? "Unknown Fin")
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.gray)
                     }
                 }
-                .listStyle(.elliptical) // Optimizes list look for circular watch faces
+                .listRowBackground(Color.clear)
             }
+            .listStyle(.plain)
         }
     }
+}
+
+#Preview {
+    ContentView(bluetoothManager: MockBluetoothManager())
 }
