@@ -13,7 +13,7 @@ struct ConnectingView: View {
     let onConnected: () -> Void
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Spacer()
             
             // Animated connecting indicator

@@ -9,9 +9,20 @@ import SwiftUI
 
 @main
 struct smartfinwatchos_Watch_AppApp: App {
+    // Create a Bluetooth manager appropriate for the environment: use the
+    // simulator mock when running in the watch simulator, otherwise use the
+    // real manager on device.
+    var bluetoothManager: BluetoothManager = {
+#if targetEnvironment(simulator)
+        return MockBluetoothManager()
+#else
+        return BluetoothManager()
+#endif
+    }()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(bluetoothManager: bluetoothManager)
         }
     }
 }

@@ -20,9 +20,9 @@ struct ContentView: View {
         NavigationView {
             ZStack {
                 if bluetoothManager.isConnected {
-                    // Once connected, show the session flow
-                    SessionFlowView()
-                        .environmentObject(bluetoothManager)
+                    // Once connected, show the session flow using the same
+                    // bluetooth manager instance so connection state propagates.
+                    SessionFlowView(bluetoothManager: bluetoothManager)
                 } else {
                     // Show connection interface
                     ConnectionView(bluetoothManager: bluetoothManager)
@@ -38,29 +38,94 @@ struct ConnectionView: View {
     
     var body: some View {
         VStack {
-            if bluetoothManager.discoveredPeripherals.isEmpty {
-                // Searching state
-                SearchingView(status: bluetoothManager.connectionStatus)
-            } else if bluetoothManager.discoveredPeripherals.count == 1 {
-                // Single device - simple button
-                SingleDeviceView(
-                    device: bluetoothManager.discoveredPeripherals.first!,
-                    onConnect: { device in
-                        bluetoothManager.connect(to: device)
+            // If we have the mock, show its simulated peripheral list so the
+            // watch simulator can connect to mock devices. Otherwise fall back
+            // to the real discovered peripherals.
+            if let mock = bluetoothManager as? MockBluetoothManager {
+                if mock.simulatedPeripherals.isEmpty {
+                    SearchingView(status: mock.connectionStatus)
+                } else if mock.simulatedPeripherals.count == 1 {
+                    let p = mock.simulatedPeripherals.first!
+                    // Present a simplified single-device view using the mock name
+                    VStack(spacing: 20) {
+                        Spacer()
+                        Image(systemName: "water.waves.and.arrow.down")
+                            .font(.system(size: 50))
+                            .foregroundColor(.blue)
+                        VStack(spacing: 4) {
+                            Text("Connect to")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .textCase(.uppercase)
+                            Text(p.name)
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                        }
+                        Spacer()
+                        Button(action: { mock.connectToSimulatedPeripheral(p.id) }) {
+                            Text("Connect")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue)
                     }
-                )
+                    .padding()
+                } else {
+                    VStack(spacing: 8) {
+                        Text("Select SmartFin")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .padding(.top)
+                        List(mock.simulatedPeripherals) { sp in
+                            Button(action: { mock.connectToSimulatedPeripheral(sp.id) }) {
+                                HStack {
+                                    Image(systemName: "water.waves")
+                                        .foregroundColor(.blue)
+                                    Text(sp.name)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                            .listRowBackground(Color.clear)
+                        }
+                        .listStyle(.plain)
+                    }
+                }
             } else {
-                // Multiple devices - show list
-                MultipleDevicesView(
-                    devices: bluetoothManager.discoveredPeripherals,
-                    onConnect: { device in
-                        bluetoothManager.connect(to: device)
-                    }
-                )
+                if bluetoothManager.discoveredPeripherals.isEmpty {
+                    // Searching state
+                    SearchingView(status: bluetoothManager.connectionStatus)
+                } else if bluetoothManager.discoveredPeripherals.count == 1 {
+                    // Single device - simple button
+                    SingleDeviceView(
+                        device: bluetoothManager.discoveredPeripherals.first!,
+                        onConnect: { device in
+                            bluetoothManager.connect(to: device)
+                        }
+                    )
+                } else {
+                    // Multiple devices - show list
+                    MultipleDevicesView(
+                        devices: bluetoothManager.discoveredPeripherals,
+                        onConnect: { device in
+                            bluetoothManager.connect(to: device)
+                        }
+                    )
+                }
             }
         }
         .onAppear {
-            if bluetoothManager.centralManager?.state == .poweredOn {
+            // If using the real manager, ensure Bluetooth is powered on before scanning.
+            if let mock = bluetoothManager as? MockBluetoothManager {
+                mock.startScanning()
+            } else if bluetoothManager.centralManager?.state == .poweredOn {
                 bluetoothManager.startScanning()
             }
         }

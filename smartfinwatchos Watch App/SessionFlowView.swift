@@ -10,12 +10,12 @@ import CoreBluetooth
 import CoreLocation
 
 struct SessionFlowView: View {
-    @StateObject var bluetoothManager: BluetoothManager
+    @ObservedObject var bluetoothManager: BluetoothManager
     @StateObject var sessionManager: SessionManager
     @State private var sessionState: SessionState = .ready
 
     init(bluetoothManager: BluetoothManager = BluetoothManager(), sessionManager: SessionManager = SessionManager()) {
-        _bluetoothManager = StateObject(wrappedValue: bluetoothManager)
+        _bluetoothManager = ObservedObject(wrappedValue: bluetoothManager)
         _sessionManager = StateObject(wrappedValue: sessionManager)
     }
     
@@ -84,9 +84,19 @@ struct SessionFlowView: View {
                 )
             }
         }
+        .onChange(of: bluetoothManager.isConnected) { connected in
+            // If we were waiting for a connection and the manager reports
+            // connected, move into the active session state.
+            if connected && sessionState == .connecting {
+                sessionState = .active
+                sessionManager.startSession()
+            }
+        }
     }
 }
 
 #Preview {
-    SessionFlowView(bluetoothManager: MockBluetoothManager(), sessionManager: SessionManager())
+    NavigationStack {
+        SessionFlowView(bluetoothManager: MockBluetoothManager(), sessionManager: SessionManager())
+    }
 }

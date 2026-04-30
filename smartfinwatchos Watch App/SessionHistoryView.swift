@@ -24,10 +24,11 @@ struct SessionHistoryView: View {
                     }
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 6, pinnedViews: []) {
+                        LazyVStack(spacing: 5, pinnedViews: []) {
                             ForEach(sessions.sorted(by: { $0.date > $1.date })) { session in
                                 NavigationLink(destination: SessionDetailView(session: session)) {
                                     SessionRowView(session: session)
+                                        .padding(.horizontal, 4).padding(.vertical, 2)
                                 }
                             }
                         }
@@ -56,7 +57,23 @@ struct SessionHistoryView: View {
 
 #Preview {
     SessionHistoryView(
-        sessions: [],
+        sessions: [SessionData(
+            id: UUID(),
+            date: Date(),
+            duration: 3600,
+            samplesCollected: 150,
+            averageTemp: 72.5,
+            deviceName: "Smart Fin"
+        ),
+       SessionData(
+           id: UUID(),
+           date: Date(),
+           duration: 3600,
+           samplesCollected: 150,
+           averageTemp: 72.5,
+           deviceName: "Smart Fin"
+       ),
+        ],
         onNewSession: {}
     )
 }

@@ -1,7 +1,14 @@
 import SwiftUI
 
 struct ContentView: View {
+    // Use a lightweight simulator mock when running in Simulator so the UI can be
+    // exercised without requiring real Bluetooth hardware. On a device the
+    // real `BluetoothManager` will be used.
+#if targetEnvironment(simulator)
+    @StateObject var bleManager = MockBluetoothManager()
+#else
     @StateObject var bleManager = BluetoothManager()
+#endif
     @State private var showBluetoothMenu = false
 
     var body: some View {

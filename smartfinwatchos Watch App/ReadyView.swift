@@ -11,7 +11,7 @@ struct ReadyView: View {
     let onStart: () -> Void
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 12) {
             Spacer()
             
             // SmartFin icon
@@ -19,7 +19,7 @@ struct ReadyView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.blue)
             
-            Text("Ready to start session")
+            Text("Ready to start")
                 .font(.headline)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.white)

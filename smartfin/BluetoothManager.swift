@@ -22,7 +22,7 @@ class BluetoothManager: NSObject, ObservableObject {
     private let smartFinServiceUUIDString = "SF-SERVICE-UUID"
     private let smartFinCharacteristicUUIDString = "SF-CHARACTERISTIC-UUID"
 
-    // Parsed CBUUIDs (nil when placeholder/invalid) — safe for previews/runtime
+    // Parsed CBUUIDs (nil when placeholder/invalid)
     private lazy var smartFinServiceUUID: CBUUID? = {
         return Self.cbuuid(from: smartFinServiceUUIDString)
     }()

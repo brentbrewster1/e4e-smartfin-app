@@ -207,6 +207,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E94552A42F2361CB0013CD80 /* Build configuration list for PBXNativeTarget "smartfin" */;
 			buildPhases = (
+				CBE1F2E72FA3025A0047732F /* ShellScript */,
 				E945527D2F2361C90013CD80 /* Sources */,
 				E945527E2F2361C90013CD80 /* Frameworks */,
 				E945527F2F2361C90013CD80 /* Resources */,
@@ -277,6 +278,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E9C657B02F3A9B1800F881CA /* Build configuration list for PBXNativeTarget "smartfinwatchos Watch App" */;
 			buildPhases = (
+				CBE1F2E82FA304540047732F /* ShellScript */,
 				E9C657842F3A9B1600F881CA /* Sources */,
 				E9C657852F3A9B1600F881CA /* Frameworks */,
 				E9C657862F3A9B1600F881CA /* Resources */,
@@ -443,6 +445,43 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		CBE1F2E72FA3025A0047732F /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/usr/bin/env bash\n# Remove bluetooth-required device capability keys from the built Info.plist\n# when building for the iOS Simulator. Paste this into a Run Script build\n# phase in your app target (only for the app target).\n\nset -e\n\n# Only operate for simulator builds\nif [ \"${PLATFORM_NAME}\" != \"iphonesimulator\" ] && [ \"${EFFECTIVE_PLATFORM_NAME}\" != \"-iphonesimulator\" ]; then\n  # Not a simulator build — do nothing\n  exit 0\nfi\n\nPLIST_PATH=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\nif [ ! -f \"${PLIST_PATH}\" ]; then\n  echo \"Built Info.plist not found at ${PLIST_PATH}. Nothing to do.\"\n  exit 0\nfi\n\n# Helper to safely run PlistBuddy commands (ignore failures)\npb() {\n  /usr/libexec/PlistBuddy -c \"$1\" \"${PLIST_PATH}\" 2>/dev/null || true\n}\n\n# Remove known bluetooth-related required device capability keys\npb \"Delete :UIRequiredDeviceCapabilities:bluetooth-le\"\npb \"Delete :UIRequiredDeviceCapabilities:bluetooth-central\"\npb \"Delete :UIRequiredDeviceCapabilities:bluetooth-peripheral\"\n\n# If UIRequiredDeviceCapabilities exists but became empty, delete the whole key\nEXISTS=$(/usr/libexec/PlistBuddy -c \"Print :UIRequiredDeviceCapabilities\" \"${PLIST_PATH}\" 2>/dev/null || echo \"NOPE\")\nif [ \"${EXISTS}\" != \"NOPE\" ]; then\n  COUNT=$(/usr/libexec/PlistBuddy -c \"Print :UIRequiredDeviceCapabilities\" \"${PLIST_PATH}\" 2>/dev/null | wc -l || echo 0)\n  if [ \"${COUNT}\" -le 1 ]; then\n    pb \"Delete :UIRequiredDeviceCapabilities\"\n  fi\nfi\n\necho \"Simulator Info.plist: removed bluetooth required-device-capabilities if present\"\n";
+		};
+		CBE1F2E82FA304540047732F /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/usr/bin/env bash\n# Remove bluetooth-required device capability keys from the built Info.plist\n# when building for the iOS Simulator. Paste this into a Run Script build\n# phase in your app target (only for the app target).\n\nset -e\n\n# Only operate for simulator builds\nif [ \"${PLATFORM_NAME}\" != \"iphonesimulator\" ] && [ \"${EFFECTIVE_PLATFORM_NAME}\" != \"-iphonesimulator\" ]; then\n  # Not a simulator build — do nothing\n  exit 0\nfi\n\nPLIST_PATH=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\nif [ ! -f \"${PLIST_PATH}\" ]; then\n  echo \"Built Info.plist not found at ${PLIST_PATH}. Nothing to do.\"\n  exit 0\nfi\n\n# Helper to safely run PlistBuddy commands (ignore failures)\npb() {\n  /usr/libexec/PlistBuddy -c \"$1\" \"${PLIST_PATH}\" 2>/dev/null || true\n}\n\n# Remove known bluetooth-related required device capability keys\npb \"Delete :UIRequiredDeviceCapabilities:bluetooth-le\"\npb \"Delete :UIRequiredDeviceCapabilities:bluetooth-central\"\npb \"Delete :UIRequiredDeviceCapabilities:bluetooth-peripheral\"\n\n# If UIRequiredDeviceCapabilities exists but became empty, delete the whole key\nEXISTS=$(/usr/libexec/PlistBuddy -c \"Print :UIRequiredDeviceCapabilities\" \"${PLIST_PATH}\" 2>/dev/null || echo \"NOPE\")\nif [ \"${EXISTS}\" != \"NOPE\" ]; then\n  COUNT=$(/usr/libexec/PlistBuddy -c \"Print :UIRequiredDeviceCapabilities\" \"${PLIST_PATH}\" 2>/dev/null | wc -l || echo 0)\n  if [ \"${COUNT}\" -le 1 ]; then\n    pb \"Delete :UIRequiredDeviceCapabilities\"\n  fi\nfi\n\necho \"Simulator Info.plist: removed bluetooth required-device-capabilities if present\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		E945527D2F2361C90013CD80 /* Sources */ = {

@@ -17,17 +17,17 @@ struct ActiveSessionView: View {
             
             // Timer
             Text(sessionManager.formattedElapsedTime)
-                .font(.system(size: 44, weight: .medium, design: .rounded))
+                .font(.system(size: 35, weight: .medium, design: .rounded))
                 .foregroundColor(.green)
                 .monospacedDigit()
             
             // Temperature
-            VStack(spacing: 4) {
+            VStack(spacing: 1) {
                 Text("Temp")
                     .font(.caption2)
                     .foregroundColor(.gray)
                 Text(String(format: "%.0f°F", sessionManager.currentTemperature))
-                    .font(.system(size: 36, weight: .semibold))
+                    .font(.system(size: 33, weight: .semibold))
                     .foregroundColor(.white)
             }
             
