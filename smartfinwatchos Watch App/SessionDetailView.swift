@@ -33,8 +33,10 @@ struct SessionDetailView: View {
 #Preview {
     SessionDetailView(
         session: SessionData(
-            id: UUID(),
-            date: Date(),
+            id: 1,
+            clientSessionId: UUID(),
+            startedAt: Date(),
+            endedAt: Date(),
             duration: 3600,
             samplesCollected: 150,
             averageTemp: 72.5,

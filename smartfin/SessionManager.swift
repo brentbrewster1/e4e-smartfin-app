@@ -23,6 +23,7 @@ class SessionManager: NSObject, ObservableObject {
     
     // MARK: - Private Properties
     private var sessionStartTime: Date?
+    private var sessionEndTime: Date?
     private var timer: Timer?
     // Collected readings now include ensemble metadata (IMU, water status, etc.)
     private struct CollectedReading: Codable {
@@ -125,6 +126,7 @@ class SessionManager: NSObject, ObservableObject {
         guard isSessionActive else { return }
         
         isSessionActive = false
+        sessionEndTime = Date()
         timer?.invalidate()
         timer = nil
         
@@ -203,10 +205,13 @@ class SessionManager: NSObject, ObservableObject {
     // MARK: - Session Saving
     func saveSession() async {
         guard let startTime = sessionStartTime else { return }
+        guard let endTime = sessionEndTime else { return }
         
         let session = SessionData(
-            id: UUID(),
-            date: startTime,
+            id: -1,
+            clientSessionId: UUID(),
+            startedAt: startTime,
+            endedAt: endTime,
             duration: elapsedTime,
             samplesCollected: samplesCollected,
             averageTemp: averageTemperature,
@@ -239,7 +244,8 @@ class SessionManager: NSObject, ObservableObject {
             }
 
             let er = EnsembleReading(
-                id: UUID().uuidString,
+                id: -1,
+                clientSessionId: UUID(),
                 ensembleType: reading.ensembleType,
                 temperature: reading.temperature,
                 waterStatus: reading.waterStatus,
@@ -295,7 +301,8 @@ extension SessionManager: CLLocationManagerDelegate {
 
 // MARK: - Data Models for Server Upload
 struct EnsembleReading: Codable {
-    let id: String
+    let id: Int // -1 if not uploaded to server (or haven't received a response)
+    let clientSessionId: UUID
     let ensembleType: String
     let temperature: Double
     let waterStatus: String
@@ -305,6 +312,7 @@ struct EnsembleReading: Codable {
 
     enum CodingKeys: String, CodingKey {
         case id
+        case clientSessionId = "client_session_id"
         case ensembleType = "ensemble_type"
         case temperature
         case waterStatus = "water_status"
