@@ -58,8 +58,8 @@ struct SessionHistoryView: View {
 #Preview {
     SessionHistoryView(
         sessions: [SessionData(
-            id: -1,
-            clientSessionId: UUID(),
+            id: UUID(),
+            serverId: -1,
             startedAt: Date(),
             endedAt: Date(),
             duration: 3600,
@@ -68,8 +68,8 @@ struct SessionHistoryView: View {
             deviceName: "Smart Fin"
         ),
        SessionData(
-           id: -1,
-           clientSessionId: UUID(),
+           id: UUID(),
+           serverId: -1,
            startedAt: Date(),
            endedAt: Date(),
            duration: 3600,

@@ -16,8 +16,8 @@ final class MockSessionManager: ObservableObject {
         let now = Date()
         savedSessions = (0..<6).map { i in
             SessionData(
-                id: i,
-                clientSessionId: UUID(),
+                id: UUID(),
+                serverId: i,
                 startedAt: Calendar.current.date(byAdding: .day, value: -i, to: now) ?? now,
                 endedAt: Calendar.current.date(byAdding: .day, value: -i, to: now) ?? now,
                 duration: TimeInterval(60 * (10 + i * 5)),

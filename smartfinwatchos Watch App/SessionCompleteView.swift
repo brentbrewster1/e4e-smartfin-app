@@ -53,7 +53,6 @@ struct SessionCompleteView: View {
             }
 
             Button(action: onSave) {
-                // TODO: Upload data to the server
                 Text("Save Session")
                     .font(.headline)
                     .frame(maxWidth: .infinity)

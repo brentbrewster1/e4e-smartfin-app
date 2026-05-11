@@ -68,7 +68,7 @@ struct SessionFlowView: View {
                     sessionManager: sessionManager,
                     onSave: {
                         Task {
-                            await sessionManager.saveSession()
+                            //sessionManager.saveSessionLocal()
                             sessionState = .history
                         }
                     }

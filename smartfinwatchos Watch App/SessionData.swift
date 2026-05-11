@@ -8,8 +8,8 @@
 import Foundation
 
 struct SessionData: Identifiable, Codable {
-    let id: Int // -1 if not uploaded to server (or haven't received a response)
-    let clientSessionId: UUID
+    let id: UUID
+    let serverId: Int // -1 if not uploaded to server (or haven't received a response)
     let startedAt: Date
     let endedAt: Date
     let duration: TimeInterval

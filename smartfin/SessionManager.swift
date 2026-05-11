@@ -20,27 +20,21 @@ class SessionManager: NSObject, ObservableObject {
     @Published var averageTemperature: Double = 0.0
     @Published var gpsEnabled = false
     @Published var savedSessions: [SessionData] = []
+    @Published var savedEnsembles: [EnsembleReading] = []
     
     // MARK: - Private Properties
-    private var sessionStartTime: Date?
-    private var sessionEndTime: Date?
-    private var timer: Timer?
-    // Collected readings now include ensemble metadata (IMU, water status, etc.)
-    private struct CollectedReading: Codable {
-        let ensembleType: String
-        let temperature: Double
-        let waterStatus: String
-        let imuMatrix: [Double]?
-        let imuSamples: [[Double]]?
-        let timestamp: Date
-    }
-
-    private var collectedReadings: [CollectedReading] = []
-    private var currentDeviceName: String = "SmartFin"
     private var locationManager: CLLocationManager?
     private var currentLocation: CLLocationCoordinate2D?
     private var bluetoothManager: BluetoothManager?
     private var cancellables = Set<AnyCancellable>()
+    private var timer: Timer?
+    
+    // Data related to current session
+    private var sessionStartTime: Date?
+    private var sessionEndTime: Date?
+    private var ensemblesInCurrentSession: [EnsembleReading] = []
+    private var clientSessionId: UUID = UUID()
+    private var currentDeviceName: String = "SmartFin"
     
     // Using BluetoothNetworkManager for uploads (server-side session upload is handled by the BluetoothNetworkManager)
     
@@ -80,7 +74,8 @@ class SessionManager: NSObject, ObservableObject {
                                     temperature: temp,
                                     waterStatus: water,
                                     imuMatrix: nil,
-                                    imuSamples: nil)
+                                    imuSamples: nil,
+                                    timestamp: Date())
             }
             .store(in: &cancellables)
     }
@@ -98,6 +93,7 @@ class SessionManager: NSObject, ObservableObject {
         self.currentDeviceName = deviceName
     }
     
+    // WARNING: This clears all previous session and ensemble data not saved to disk or sent to the server
     func startSession() {
         guard !isSessionActive else { return }
         
@@ -105,7 +101,8 @@ class SessionManager: NSObject, ObservableObject {
         sessionStartTime = Date()
         elapsedTime = 0
         samplesCollected = 0
-        collectedReadings = []
+        ensemblesInCurrentSession = []
+        clientSessionId = UUID()
         
         // Start location tracking
         locationManager?.startUpdatingLocation()
@@ -133,11 +130,9 @@ class SessionManager: NSObject, ObservableObject {
         // Stop location tracking
         locationManager?.stopUpdatingLocation()
         
-        // Calculate average temperature
-        if !collectedReadings.isEmpty {
-            let temps = collectedReadings.map { $0.temperature }
-            averageTemperature = temps.reduce(0, +) / Double(temps.count)
-        }
+        saveSessionLocal()
+//        print("SESSION COUNT:", savedSessions.count)
+//        print("SESSION IDS:", savedSessions.map { $0.id })
     }
     
     func reset() {
@@ -145,7 +140,7 @@ class SessionManager: NSObject, ObservableObject {
         currentTemperature = 67.0
         samplesCollected = 0
         averageTemperature = 0.0
-        collectedReadings = []
+        ensemblesInCurrentSession = []
         gpsEnabled = false
     }
     
@@ -173,89 +168,90 @@ class SessionManager: NSObject, ObservableObject {
         let tempVariation = Double.random(in: -2...2)
         currentTemperature = 67.0 + tempVariation
 
-        let reading = CollectedReading(
+        let ensemble = EnsembleReading(
+            id: clientSessionId,
+            serverId: -1,
             ensembleType: "01",
             temperature: currentTemperature,
             waterStatus: "dry",
-            imuMatrix: nil,
-            imuSamples: nil,
+            geoCoordinates: nil,
+            imuData: nil,
             timestamp: Date()
         )
-        collectedReadings.append(reading)
-        samplesCollected = collectedReadings.count
+        ensemblesInCurrentSession.append(ensemble)
+        samplesCollected = ensemblesInCurrentSession.count
+        saveEnsembleLocal(ensemble: ensemble)
     }
 
     // Handle incoming ensembles (simplified for frontend)
-    private func handleEnsemble(ensembleType: String, temperature: Double, waterStatus: String, imuMatrix: [Double]?, imuSamples: [[Double]]?) {
+    private func handleEnsemble(ensembleType: String, temperature: Double, waterStatus: String, imuMatrix: [Double]?, imuSamples: [[Double]]?, timestamp: Date) {
         currentTemperature = temperature
-
-        let reading = CollectedReading(
+        
+        // Encode imu data as JSON string if present
+        var imuDataString: String? = nil
+        
+        if let matrix = imuMatrix {
+            if let d = try? JSONEncoder().encode(matrix), let s = String(data: d, encoding: .utf8) {
+                imuDataString = s
+            }
+        } else if let samples = imuSamples {
+            if let d = try? JSONEncoder().encode(samples), let s = String(data: d, encoding: .utf8) {
+                imuDataString = s
+            }
+        }
+        
+        let ensemble = EnsembleReading(
+            id: clientSessionId,
+            serverId: -1,
             ensembleType: ensembleType,
             temperature: temperature,
             waterStatus: waterStatus,
-            imuMatrix: imuMatrix,
-            imuSamples: imuSamples,
-            timestamp: Date()
+            geoCoordinates: currentLocation.map { "\($0.latitude),\($0.longitude)" },
+            imuData: imuDataString,
+            timestamp: timestamp
         )
-
-        collectedReadings.append(reading)
-        samplesCollected = collectedReadings.count
+        
+        ensemblesInCurrentSession.append(ensemble)
+        samplesCollected = ensemblesInCurrentSession.count
+        saveEnsembleLocal(ensemble: ensemble)
     }
     
     // MARK: - Session Saving
-    func saveSession() async {
+    func saveSessionLocal() {
         guard let startTime = sessionStartTime else { return }
         guard let endTime = sessionEndTime else { return }
         
+        // Calculate average temperature
+        if !ensemblesInCurrentSession.isEmpty {
+            let temps = ensemblesInCurrentSession.map { $0.temperature }
+            averageTemperature = temps.reduce(0, +) / Double(temps.count)
+        }
+        
         let session = SessionData(
-            id: -1,
-            clientSessionId: UUID(),
+            id: clientSessionId,
+            serverId: -1,
             startedAt: startTime,
             endedAt: endTime,
-            duration: elapsedTime,
-            samplesCollected: samplesCollected,
+            duration: elapsedTime, // calculated throughout session
+            samplesCollected: samplesCollected, // calculated on each ensemble append
             averageTemp: averageTemperature,
             deviceName: currentDeviceName
         )
         
         // Save locally
         savedSessions.append(session)
-        saveToDisk()
-        
-        // Upload to server
-        await uploadToServer(session: session)
+        saveSessionsToDisk()
     }
     
+    // MARK: - Ensemble Saving
+    func saveEnsembleLocal(ensemble: EnsembleReading) {
+        savedEnsembles.append(ensemble)
+        saveReadingsToDisk()
+    }
+    
+    
     // MARK: - Server Upload
-    private func uploadToServer(session: SessionData) async {
-        // Prepare ensemble readings for upload
-        var readings: [EnsembleReading] = []
-        for reading in collectedReadings {
-            // Encode imu data as JSON string if present
-            var imuDataString: String? = nil
-            if let matrix = reading.imuMatrix {
-                if let d = try? JSONEncoder().encode(matrix), let s = String(data: d, encoding: .utf8) {
-                    imuDataString = s
-                }
-            } else if let samples = reading.imuSamples {
-                if let d = try? JSONEncoder().encode(samples), let s = String(data: d, encoding: .utf8) {
-                    imuDataString = s
-                }
-            }
-
-            let er = EnsembleReading(
-                id: -1,
-                clientSessionId: UUID(),
-                ensembleType: reading.ensembleType,
-                temperature: reading.temperature,
-                waterStatus: reading.waterStatus,
-                geoCoordinates: currentLocation.map { "\($0.latitude),\($0.longitude)" },
-                imuData: imuDataString,
-                timestamp: reading.timestamp
-            )
-            readings.append(er)
-        }
-
+    private func uploadToServer(readings: [EnsembleReading]) async {
         // BluetoothNetworkManager expects a string 'value' payload. Encode readings to JSON string and send.
         do {
             let data = try JSONEncoder().encode(readings)
@@ -271,9 +267,15 @@ class SessionManager: NSObject, ObservableObject {
     }
     
     // MARK: - Persistence
-    private func saveToDisk() {
+    private func saveSessionsToDisk() {
         if let encoded = try? JSONEncoder().encode(savedSessions) {
             UserDefaults.standard.set(encoded, forKey: "savedSessions")
+        }
+    }
+    
+    private func saveReadingsToDisk() {
+        if let encoded = try? JSONEncoder().encode(savedEnsembles) {
+            UserDefaults.standard.set(encoded, forKey: "savedEnsembles")
         }
     }
     
@@ -282,6 +284,11 @@ class SessionManager: NSObject, ObservableObject {
            let decoded = try? JSONDecoder().decode([SessionData].self, from: data) {
             savedSessions = decoded
         }
+    }
+    
+    private func clearSavedData() {
+        UserDefaults.standard.removeObject(forKey: "savedSessions")
+        UserDefaults.standard.removeObject(forKey: "savedEnsembles")
     }
 }
 
@@ -301,8 +308,8 @@ extension SessionManager: CLLocationManagerDelegate {
 
 // MARK: - Data Models for Server Upload
 struct EnsembleReading: Codable {
-    let id: Int // -1 if not uploaded to server (or haven't received a response)
-    let clientSessionId: UUID
+    let id: UUID
+    let serverId: Int // -1 if not uploaded to server (or haven't received a response)
     let ensembleType: String
     let temperature: Double
     let waterStatus: String
@@ -311,8 +318,8 @@ struct EnsembleReading: Codable {
     let timestamp: Date
 
     enum CodingKeys: String, CodingKey {
-        case id
-        case clientSessionId = "client_session_id"
+        case id = "client_session_id"
+        case serverId = "id"
         case ensembleType = "ensemble_type"
         case temperature
         case waterStatus = "water_status"
