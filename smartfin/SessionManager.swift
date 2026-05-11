@@ -180,7 +180,7 @@ class SessionManager: NSObject, ObservableObject {
         )
         ensemblesInCurrentSession.append(ensemble)
         samplesCollected = ensemblesInCurrentSession.count
-        saveEnsembleLocal(ensemble: ensemble)
+        saveEnsembleLocal()
     }
 
     // Handle incoming ensembles (simplified for frontend)
@@ -213,7 +213,7 @@ class SessionManager: NSObject, ObservableObject {
         
         ensemblesInCurrentSession.append(ensemble)
         samplesCollected = ensemblesInCurrentSession.count
-        saveEnsembleLocal(ensemble: ensemble)
+        saveEnsembleLocal()
     }
     
     // MARK: - Session Saving
@@ -244,9 +244,13 @@ class SessionManager: NSObject, ObservableObject {
     }
     
     // MARK: - Ensemble Saving
-    func saveEnsembleLocal(ensemble: EnsembleReading) {
-        savedEnsembles.append(ensemble)
-        saveReadingsToDisk()
+    func saveEnsembleLocal() {
+        // edge case -- could potentially add duplicates, such as on crash
+        for ensemble in ensemblesInCurrentSession {
+            savedEnsembles.append(ensemble)
+        }
+        
+        saveEnsemblesToDisk()
     }
     
     
@@ -273,7 +277,7 @@ class SessionManager: NSObject, ObservableObject {
         }
     }
     
-    private func saveReadingsToDisk() {
+    private func saveEnsemblesToDisk() {
         if let encoded = try? JSONEncoder().encode(savedEnsembles) {
             UserDefaults.standard.set(encoded, forKey: "savedEnsembles")
         }
