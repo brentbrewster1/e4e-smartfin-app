@@ -55,7 +55,9 @@ struct SessionRowView: View {
     SessionRowView(
         session: SessionData(
             id: UUID(),
-            date: Date(),
+            serverId: -1,
+            startedAt: Date(),
+            endedAt: Date(),
             duration: 3600,
             samplesCollected: 150,
             averageTemp: 72.5,

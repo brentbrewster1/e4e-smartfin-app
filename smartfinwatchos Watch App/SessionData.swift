@@ -9,7 +9,9 @@ import Foundation
 
 struct SessionData: Identifiable, Codable {
     let id: UUID
-    let date: Date
+    let serverId: Int // -1 if not uploaded to server (or haven't received a response)
+    let startedAt: Date
+    let endedAt: Date
     let duration: TimeInterval
     let samplesCollected: Int
     let averageTemp: Double
@@ -18,13 +20,13 @@ struct SessionData: Identifiable, Codable {
     var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, yyyy"
-        return formatter.string(from: date)
+        return formatter.string(from: startedAt)
     }
     
     var formattedTime: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
-        return formatter.string(from: date)
+        return formatter.string(from: startedAt)
     }
     
     var formattedDuration: String {

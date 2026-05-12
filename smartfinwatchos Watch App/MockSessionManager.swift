@@ -17,7 +17,9 @@ final class MockSessionManager: ObservableObject {
         savedSessions = (0..<6).map { i in
             SessionData(
                 id: UUID(),
-                date: Calendar.current.date(byAdding: .day, value: -i, to: now) ?? now,
+                serverId: i,
+                startedAt: Calendar.current.date(byAdding: .day, value: -i, to: now) ?? now,
+                endedAt: Calendar.current.date(byAdding: .day, value: -i, to: now) ?? now,
                 duration: TimeInterval(60 * (10 + i * 5)),
                 samplesCollected: 10 + i,
                 averageTemp: 68.0 + Double(i),
