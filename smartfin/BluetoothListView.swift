@@ -49,28 +49,14 @@ struct BluetoothListView: View {
                                 .italic()
                         } else {
                             ForEach(bleManager.discoveredPeripherals, id: \.identifier) { peripheral in
-                                let uuid       = peripheral.identifier
-                                let pktCounter = bleManager.lastAdvertisedPacketCount[uuid]
-                                let advEvents  = bleManager.advertisingEventCount[uuid] ?? 0
                                 Button(action: {
+                                    // Connect when tapped
                                     bleManager.connect(to: peripheral)
                                     presentationMode.wrappedValue.dismiss()
                                 }) {
                                     HStack {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(peripheral.name ?? "Unknown Device")
-                                                .fontWeight(.bold)
-                                            // Advertising packet counter from the fin's manufacturer data
-                                            if let counter = pktCounter {
-                                                Text("Last adv pkt# \(counter)  ·  \(advEvents) adv events seen")
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            } else {
-                                                Text("\(advEvents) adv event(s) — no mfr data yet")
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                        }
+                                        Text(peripheral.name ?? "Unknown Device")
+                                            .fontWeight(.bold)
                                         Spacer()
                                         Text("Connect")
                                             .foregroundColor(.blue)
