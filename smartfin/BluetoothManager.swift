@@ -12,12 +12,16 @@ class BluetoothManager: NSObject, ObservableObject {
     @Published var waterStatus: String = "unknown"
     @Published var batteryLevel: Int = 100
     @Published var dataLog: [String] = []
+    /// Total BLE advertisement packets received from scan-start until connection was established.
+    @Published var packetsUntilConnected: Int = 0
     
     // MARK: - Core Bluetooth
     var centralManager: CBCentralManager?
     private var smartFinCharacteristic: CBCharacteristic?
     // Keep a strong reference to the peripheral we're attempting to connect to
     private var pendingPeripheral: CBPeripheral?
+    /// Running count of every advertisement packet heard since the last scan start.
+    private var advertisementPacketCount: Int = 0
     
     // MARK: - Service & Characteristic UUIDs
     // Update these with actual SmartFin UUIDs (leave as placeholder for previews)
@@ -71,6 +75,8 @@ class BluetoothManager: NSObject, ObservableObject {
         }
         
         discoveredPeripherals.removeAll()
+        advertisementPacketCount = 0
+        packetsUntilConnected = 0
         connectionStatus = "Searching for SmartFin..."
         appendToDataLog("Started scanning for SmartFin devices")
         
@@ -142,23 +148,30 @@ extension BluetoothManager: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+        // Count every advertisement packet heard regardless of device identity
+        advertisementPacketCount += 1
+
         // Filter for SmartFin devices
         if let name = peripheral.name, name.contains("SmartFin") || name.contains("Smartfin") {
             // Avoid duplicates
             if !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) {
                 discoveredPeripherals.append(peripheral)
-                appendToDataLog("Discovered: \(name) (RSSI: \(RSSI))")
+                appendToDataLog("Discovered: \(name) (RSSI: \(RSSI)) after \(advertisementPacketCount) total adv. packets")
             }
         }
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        // Freeze the advertisement packet count at the moment of connection
+        packetsUntilConnected = advertisementPacketCount
+        advertisementPacketCount = 0
+
         isConnected = true
         // Clear pending and promote to connectedDevice
         pendingPeripheral = nil
         connectedDevice = peripheral
         connectionStatus = "Connected to \(peripheral.name ?? "SmartFin")"
-        appendToDataLog("Connected to \(peripheral.name ?? "SmartFin")")
+        appendToDataLog("Connected to \(peripheral.name ?? "SmartFin") — packets until connect: \(packetsUntilConnected)")
         
         // Set delegate and discover services
         peripheral.delegate = self
