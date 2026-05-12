@@ -9,7 +9,7 @@ import Foundation
 class MockBluetoothManager: BluetoothManager {
     private var timer: Timer?
     private var sampleIndex = 0
-    
+
     // Simple simulated peripheral model used only by the mock so the UI can
     // display a list of connectable devices in the Simulator.
     struct SimPeripheral: Identifiable {
@@ -51,13 +51,21 @@ class MockBluetoothManager: BluetoothManager {
             self.sampleIndex += 1
 
             // Generate a temperature between 58.0 and 78.0
-            let temp = 58.0 + Double(Int.random(in: 0...200)) / 10.0
-            self.currentTemperature = temp
-            self.waterStatus = (self.sampleIndex % 6 == 0) ? "in-water" : "dry"
+            let tempF = 58.0 + Double(Int.random(in: 0...200)) / 10.0
+            let celsius = (tempF - 32.0) * 5.0 / 9.0
+            let waterRaw: UInt8 = (self.sampleIndex % 6 == 0) ? 1 : 0
+            let sample = DecodedFinEnsemble.temperatureWater(
+                finElapsedDs: UInt32(self.sampleIndex % 0xFFFFF),
+                celsius: celsius,
+                waterRaw: waterRaw
+            )
 
-            let msg = String(format: "Mock sample %03d — temp=%.1f, water=%@", self.sampleIndex, self.currentTemperature, self.waterStatus)
             // Append to the published dataLog while keeping it bounded
             DispatchQueue.main.async {
+                self.currentTemperature = tempF
+                self.waterStatus = waterRaw == 1 ? "in-water" : "dry"
+                self.decodedTelemetry.send([sample])
+                let msg = String(format: "Mock sample %03d — temp=%.1f, water=%@", self.sampleIndex, tempF, self.waterStatus)
                 self.dataLog.append(msg)
                 if self.dataLog.count > 500 {
                     self.dataLog.removeFirst(self.dataLog.count - 500)

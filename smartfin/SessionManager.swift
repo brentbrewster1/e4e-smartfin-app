@@ -24,6 +24,8 @@ class SessionManager: NSObject, ObservableObject {
     // MARK: - Private Properties
     private var sessionStartTime: Date?
     private var timer: Timer?
+    private var lastTemperatureF: Double = 67.0
+
     // Collected readings now include ensemble metadata (IMU, water status, etc.)
     private struct CollectedReading: Codable {
         let ensembleType: String
@@ -32,6 +34,7 @@ class SessionManager: NSObject, ObservableObject {
         let imuMatrix: [Double]?
         let imuSamples: [[Double]]?
         let timestamp: Date
+        let finElapsedTimeDeciseconds: UInt32?
     }
 
     private var collectedReadings: [CollectedReading] = []
@@ -67,21 +70,23 @@ class SessionManager: NSObject, ObservableObject {
     // MARK: - Bluetooth Binding
     /// Bind a BluetoothManager instance so sessions can record real ensemble-driven samples.
     func bindBluetoothManager(_ manager: BluetoothManager) {
+        cancellables.removeAll()
         bluetoothManager = manager
 
-        // Subscribe to temperature + waterStatus from the Bluetooth manager.
-        // Simpler: we don't assume Ensemble IDs here — frontend only needs temp + water state.
-        manager.$currentTemperature
-            .combineLatest(manager.$waterStatus)
-            .sink { [weak self] temp, water in
-                guard let self = self else { return }
-                self.handleEnsemble(ensembleType: "01",
-                                    temperature: temp,
-                                    waterStatus: water,
-                                    imuMatrix: nil,
-                                    imuSamples: nil)
+        manager.decodedTelemetry
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] ensembles in
+                self?.handleDecodedEnsembles(ensembles)
             }
             .store(in: &cancellables)
+    }
+
+    private static func waterLabel(_ raw: UInt8) -> String {
+        switch raw {
+        case 0: return "dry"
+        case 1: return "in-water"
+        default: return "raw_\(raw)"
+        }
     }
     
     // MARK: - Location Setup
@@ -105,7 +110,8 @@ class SessionManager: NSObject, ObservableObject {
         elapsedTime = 0
         samplesCollected = 0
         collectedReadings = []
-        
+        lastTemperatureF = 67.0
+
         // Start location tracking
         locationManager?.startUpdatingLocation()
         gpsEnabled = true
@@ -130,10 +136,13 @@ class SessionManager: NSObject, ObservableObject {
         
         // Stop location tracking
         locationManager?.stopUpdatingLocation()
-        
+
         // Calculate average temperature
-        if !collectedReadings.isEmpty {
-            let temps = collectedReadings.map { $0.temperature }
+        let temps = collectedReadings.compactMap { reading -> Double? in
+            guard reading.ensembleType == "01" else { return nil }
+            return reading.temperature
+        }
+        if !temps.isEmpty {
             averageTemperature = temps.reduce(0, +) / Double(temps.count)
         }
     }
@@ -144,6 +153,7 @@ class SessionManager: NSObject, ObservableObject {
         samplesCollected = 0
         averageTemperature = 0.0
         collectedReadings = []
+        lastTemperatureF = 67.0
         gpsEnabled = false
     }
     
@@ -169,22 +179,25 @@ class SessionManager: NSObject, ObservableObject {
     private func collectSample() {
         // Simulate temperature variation (replace with actual BLE data)
         let tempVariation = Double.random(in: -2...2)
-        currentTemperature = 67.0 + tempVariation
-
-        let reading = CollectedReading(
+        let tempF = 67.0 + tempVariation
+        appendCollectedReading(
             ensembleType: "01",
-            temperature: currentTemperature,
+            temperature: tempF,
             waterStatus: "dry",
             imuMatrix: nil,
             imuSamples: nil,
-            timestamp: Date()
+            finElapsedTimeDeciseconds: nil
         )
-        collectedReadings.append(reading)
-        samplesCollected = collectedReadings.count
     }
 
-    // Handle incoming ensembles (simplified for frontend)
-    private func handleEnsemble(ensembleType: String, temperature: Double, waterStatus: String, imuMatrix: [Double]?, imuSamples: [[Double]]?) {
+    private func appendCollectedReading(
+        ensembleType: String,
+        temperature: Double,
+        waterStatus: String,
+        imuMatrix: [Double]?,
+        imuSamples: [[Double]]?,
+        finElapsedTimeDeciseconds: UInt32?
+    ) {
         currentTemperature = temperature
 
         let reading = CollectedReading(
@@ -193,32 +206,90 @@ class SessionManager: NSObject, ObservableObject {
             waterStatus: waterStatus,
             imuMatrix: imuMatrix,
             imuSamples: imuSamples,
-            timestamp: Date()
+            timestamp: Date(),
+            finElapsedTimeDeciseconds: finElapsedTimeDeciseconds
         )
-
         collectedReadings.append(reading)
         samplesCollected = collectedReadings.count
+    }
+
+    // Handle incoming ensembles (simplified for frontend)
+    private func handleDecodedEnsembles(_ ensembles: [DecodedFinEnsemble]) {
+        guard isSessionActive else { return }
+
+        for ensemble in ensembles {
+            switch ensemble {
+            case .temperatureWater(let finDs, let celsius, let waterRaw):
+                let tempF = celsius * 9.0 / 5.0 + 32.0
+                lastTemperatureF = tempF
+                appendCollectedReading(
+                    ensembleType: "01",
+                    temperature: tempF,
+                    waterStatus: Self.waterLabel(waterRaw),
+                    imuMatrix: nil,
+                    imuSamples: nil,
+                    finElapsedTimeDeciseconds: finDs
+                )
+            case .highRateIMU(let finDs, let imu9):
+                appendCollectedReading(
+                    ensembleType: "0C",
+                    temperature: lastTemperatureF,
+                    waterStatus: "n/a",
+                    imuMatrix: nil,
+                    imuSamples: [imu9],
+                    finElapsedTimeDeciseconds: finDs
+                )
+            }
+        }
     }
     
     // MARK: - Session Saving
     func saveSession() async {
         guard let startTime = sessionStartTime else { return }
-        
+
+        let sessionId = UUID()
         let session = SessionData(
-            id: UUID(),
+            id: sessionId,
             date: startTime,
             duration: elapsedTime,
             samplesCollected: samplesCollected,
             averageTemp: averageTemperature,
             deviceName: currentDeviceName
         )
-        
+
+        persistSessionReadings(sessionId: sessionId, readings: collectedReadings)
+
         // Save locally
         savedSessions.append(session)
         saveToDisk()
-        
+
         // Upload to server
         await uploadToServer(session: session)
+    }
+
+    private func persistSessionReadings(sessionId: UUID, readings: [CollectedReading]) {
+        guard let dir = applicationSupportSessionsDirectory() else { return }
+        let url = dir.appendingPathComponent("\(sessionId.uuidString).json", isDirectory: false)
+        do {
+            let data = try JSONEncoder().encode(readings)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            print("Session readings save failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func applicationSupportSessionsDirectory() -> URL? {
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let dir = appSupport.appendingPathComponent("SmartFinSessionReadings", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir
+        } catch {
+            print("Could not create sessions directory: \(error.localizedDescription)")
+            return nil
+        }
     }
     
     // MARK: - Server Upload

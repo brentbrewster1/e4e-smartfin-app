@@ -84,6 +84,9 @@ struct SessionFlowView: View {
                 )
             }
         }
+        .onAppear {
+            sessionManager.bindBluetoothManager(bluetoothManager)
+        }
         .onChange(of: bluetoothManager.isConnected) { connected in
             // If we were waiting for a connection and the manager reports
             // connected, move into the active session state.

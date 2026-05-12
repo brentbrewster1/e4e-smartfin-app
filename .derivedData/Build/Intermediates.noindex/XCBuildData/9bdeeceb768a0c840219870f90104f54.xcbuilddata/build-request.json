@@ -1,0 +1,69 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "ae9e1a511b12a8dd1388e8b410947447ab40c9b88bcba0aad517ca312afc9276"
+    },
+    {
+      "guid" : "ae9e1a511b12a8dd1388e8b410947447b9df74b40cc130fe42dd54e862d53d71"
+    }
+  ],
+  "containerPath" : "/Users/colecarter/e4e-smartfin-app-2/smartfin.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "undefined_arch",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : true,
+      "platform" : "watchsimulator",
+      "sdk" : "watchsimulator11.2",
+      "sdkVariant" : "watchsimulator",
+      "supportedArchitectures" : [
+        "i386",
+        "x86_64"
+      ],
+      "targetArchitecture" : "undefined_arch"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/colecarter/e4e-smartfin-app-2/.derivedData/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/colecarter/e4e-smartfin-app-2/.derivedData/Build/Products",
+      "derivedDataPath" : "/Users/colecarter/e4e-smartfin-app-2/.derivedData",
+      "indexDataStoreFolderPath" : "/Users/colecarter/e4e-smartfin-app-2/.derivedData/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/colecarter/e4e-smartfin-app-2/.derivedData/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/colecarter/e4e-smartfin-app-2/.derivedData/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+          "CODE_SIGN_IDENTITY" : "-",
+          "CODE_SIGNING_ALLOWED" : "NO"
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "CLANG_COVERAGE_MAPPING" : "YES",
+          "CLANG_PROFILE_DATA_DIRECTORY" : "/Users/colecarter/e4e-smartfin-app-2/.derivedData/Build/ProfileData",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

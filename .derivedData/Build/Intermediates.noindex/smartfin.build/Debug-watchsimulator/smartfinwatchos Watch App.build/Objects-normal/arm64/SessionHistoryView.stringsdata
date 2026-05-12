@@ -1,0 +1,24 @@
+{
+  "source": "/Users/colecarter/e4e-smartfin-app-2/smartfinwatchos Watch App/SessionHistoryView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "No sessions yet",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 20
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Session",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 44
+        }
+      }
+    ]
+  },
+  "version": 1
+}

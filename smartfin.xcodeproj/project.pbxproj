@@ -86,6 +86,7 @@
 				BluetoothManager.swift,
 				NetworkManager.swift,
 				SessionManager.swift,
+				SmartFinTelemetryDecoder.swift,
 			);
 			target = E9C657872F3A9B1600F881CA /* smartfinwatchos Watch App */;
 		};

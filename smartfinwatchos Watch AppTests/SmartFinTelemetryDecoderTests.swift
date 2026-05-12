@@ -1,0 +1,27 @@
+//
+//  SmartFinTelemetryDecoderTests.swift
+//  smartfinwatchos Watch AppTests
+//
+
+import Foundation
+import Testing
+@testable import smartfinwatchos_Watch_App
+
+struct SmartFinTelemetryDecoderTests {
+
+    @Test func decodesSingleTemperatureEnsemble() {
+        let bytes: [UInt8] = [0x01, 0, 0, 0, 0x06, 0, 0x01, 0, 0, 0, 0x05, 0x01]
+        let decoded = SmartFinTelemetryDecoder.decodePacket(Data(bytes))
+        #expect(decoded.count == 1)
+        guard case .temperatureWater(_, let celsius, let water) = decoded[0] else {
+            #expect(false, "Expected temperatureWater ensemble")
+            return
+        }
+        #expect(abs(celsius - 10.0) < 0.001)
+        #expect(water == 1)
+    }
+
+    @Test func emptyWhenTooShort() {
+        #expect(SmartFinTelemetryDecoder.decodePacket(Data([1, 2, 3])).isEmpty)
+    }
+}
