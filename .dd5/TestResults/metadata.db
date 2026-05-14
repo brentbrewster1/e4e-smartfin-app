@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>FormatVersion</key>
+	<integer>1</integer>
+	<key>Store</key>
+	<dict>
+		<key>smartfinwatchos Watch AppTests</key>
+		<dict>
+			<key>SmartFinTelemetryDecoderTests</key>
+			<dict>
+				<key>decodesSingleTemperatureEnsemble</key>
+				<dict>
+					<key>mrnet</key>
+					<real>0.0035948753356933594</real>
+				</dict>
+				<key>emptyWhenTooShort</key>
+				<dict>
+					<key>mrnet</key>
+					<real>0.0030272006988525391</real>
+				</dict>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>

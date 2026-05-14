@@ -1,0 +1,32 @@
+{
+  "source": "/Users/colecarter/e4e-smartfin-app-2/smartfinwatchos Watch App/ActiveSessionView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Temp",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 26
+        }
+      },
+      {
+        "comment": "",
+        "key": "GPS",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 36
+        }
+      },
+      {
+        "comment": "",
+        "key": "End Session",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 47
+        }
+      }
+    ]
+  },
+  "version": 1
+}

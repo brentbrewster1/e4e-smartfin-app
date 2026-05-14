@@ -75,7 +75,7 @@ class SessionManager: NSObject, ObservableObject {
 
         manager.decodedTelemetry
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] ensembles in
+            .sink { [weak self] (ensembles: [DecodedFinEnsemble]) in
                 self?.handleDecodedEnsembles(ensembles)
             }
             .store(in: &cancellables)

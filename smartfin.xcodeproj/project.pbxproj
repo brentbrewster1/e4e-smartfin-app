@@ -86,7 +86,6 @@
 				BluetoothManager.swift,
 				NetworkManager.swift,
 				SessionManager.swift,
-				SmartFinTelemetryDecoder.swift,
 			);
 			target = E9C657872F3A9B1600F881CA /* smartfinwatchos Watch App */;
 		};
@@ -450,6 +449,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		CBE1F2E72FA3025A0047732F /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -467,6 +467,7 @@
 		};
 		CBE1F2E82FA304540047732F /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);

@@ -1,0 +1,8 @@
+Target dependency graph (4 targets)
+Target 'smartfinwatchos Watch AppUITests' in project 'smartfin'
+➜ Explicit dependency on target 'smartfinwatchos Watch App' in project 'smartfin'
+Target 'smartfinwatchos Watch AppTests' in project 'smartfin'
+➜ Explicit dependency on target 'smartfinwatchos Watch App' in project 'smartfin'
+Target 'smartfin' in project 'smartfin'
+➜ Explicit dependency on target 'smartfinwatchos Watch App' in project 'smartfin'
+Target 'smartfinwatchos Watch App' in project 'smartfin' (no dependencies)
