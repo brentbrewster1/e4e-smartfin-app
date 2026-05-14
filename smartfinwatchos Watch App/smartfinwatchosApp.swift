@@ -8,17 +8,8 @@
 import Combine
 import SwiftUI
 
-/// Owns the single `BluetoothManager` for the watch app lifetime (avoids recreating on `App` body refresh).
 private final class WatchBluetoothLaunchBox: ObservableObject {
-    let manager: BluetoothManager
-
-    init() {
-#if targetEnvironment(simulator)
-        manager = MockBluetoothManager()
-#else
-        manager = BluetoothManager()
-#endif
-    }
+    let manager = BluetoothManager()
 }
 
 @main

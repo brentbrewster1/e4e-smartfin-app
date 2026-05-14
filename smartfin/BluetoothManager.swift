@@ -174,6 +174,8 @@ class BluetoothManager: NSObject, ObservableObject {
 
     private let telemetryDecodeQueue = DispatchQueue(label: "com.smartfin.telemetry.decode", qos: .userInitiated)
 
+    private var pendingStartScan = false
+
     // MARK: - Service & Characteristic UUIDs
     static let telemetryUUID = CBUUID(string: "DEEDDB00-166E-407C-8158-7B9693AD2685")
     static let controlUUID = CBUUID(string: "C39513E6-631E-439A-9B3B-AFFA0635B3D1")
@@ -219,10 +221,12 @@ class BluetoothManager: NSObject, ObservableObject {
     // MARK: - Scanning
     func startScanning() {
         guard centralManager?.state == .poweredOn else {
-            connectionStatus = "Bluetooth is not available"
+            pendingStartScan = true
+            connectionStatus = "Waiting for Bluetooth..."
             return
         }
 
+        pendingStartScan = false
         discoveredPeripherals.removeAll()
         connectionStatus = "Searching for SmartFin..."
         appendToDataLog("Started scanning for SmartFin devices")
@@ -233,6 +237,16 @@ class BluetoothManager: NSObject, ObservableObject {
 
     func stopScanning() {
         centralManager?.stopScan()
+    }
+
+    /// Stop scanning and clear the discovery list (e.g. user cancelled fin selection).
+    func endDeviceSearch() {
+        pendingStartScan = false
+        stopScanning()
+        discoveredPeripherals.removeAll()
+        if !isConnected {
+            connectionStatus = "Bluetooth ready"
+        }
     }
 
     // Simple logger to keep a running stream of status / data messages for the UI
@@ -321,7 +335,10 @@ extension BluetoothManager: CBCentralManagerDelegate {
         switch central.state {
         case .poweredOn:
             connectionStatus = "Bluetooth ready"
-            startScanning()
+            if pendingStartScan {
+                pendingStartScan = false
+                startScanning()
+            }
         case .poweredOff:
             connectionStatus = "Bluetooth is off"
         case .unauthorized:
@@ -334,14 +351,22 @@ extension BluetoothManager: CBCentralManagerDelegate {
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
-        // Filter for SmartFin devices
-        if let name = peripheral.name, name.contains("SmartFin") || name.contains("Smartfin") {
-            // Avoid duplicates
-            if !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) {
-                discoveredPeripherals.append(peripheral)
-                appendToDataLog("Discovered: \(name) (RSSI: \(RSSI))")
-            }
+        guard Self.peripheralLooksLikeSmartFin(peripheral, advertisementData: advertisementData) else { return }
+        if !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) {
+            discoveredPeripherals.append(peripheral)
+            let label = peripheral.name
+                ?? (advertisementData[CBAdvertisementDataLocalNameKey] as? String)
+                ?? "SmartFin"
+            appendToDataLog("Discovered: \(label) (RSSI: \(RSSI))")
         }
+    }
+
+    /// Advertised / local name must contain `"smartfin"` (case-insensitive).
+    private static func peripheralLooksLikeSmartFin(_ peripheral: CBPeripheral, advertisementData: [String: Any]) -> Bool {
+        let local = advertisementData[CBAdvertisementDataLocalNameKey] as? String
+        let candidates = [peripheral.name, local].compactMap { $0 }
+        guard !candidates.isEmpty else { return false }
+        return candidates.contains { $0.range(of: "smartfin", options: .caseInsensitive) != nil }
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {

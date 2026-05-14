@@ -7,7 +7,8 @@
 
 enum SessionState {
     case ready
-    case connecting
+    /// Scanning / listing real SmartFin peripherals (CoreBluetooth).
+    case selectFin
     case active
     case complete
     case history

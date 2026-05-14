@@ -7,52 +7,49 @@
 
 import SwiftUI
 import CoreBluetooth
-import CoreLocation
+import WatchKit
 
 struct SessionFlowView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @StateObject var sessionManager: SessionManager
     @State private var sessionState: SessionState = .ready
 
-    init(bluetoothManager: BluetoothManager = BluetoothManager(), sessionManager: SessionManager = SessionManager()) {
+    init(bluetoothManager: BluetoothManager, sessionManager: SessionManager = SessionManager()) {
         _bluetoothManager = ObservedObject(wrappedValue: bluetoothManager)
         _sessionManager = StateObject(wrappedValue: sessionManager)
     }
-    
+
     var body: some View {
         ZStack {
             switch sessionState {
             case .ready:
                 ReadyView(onStart: {
-                    sessionState = .connecting
-                    sessionManager.prepareSession(deviceName: bluetoothManager.connectedDevice?.name ?? "SmartFin")
-                })
-
-            case .connecting:
-                ConnectingView(
-                    deviceName: bluetoothManager.connectedDevice?.name ?? "Smart Fin",
-                    onCancel: {
-                        sessionState = .ready
-                        bluetoothManager.disconnect()
-                    },
-                    onConnected: {
+                    if bluetoothManager.isConnected {
+                        sessionManager.prepareSession(deviceName: bluetoothManager.connectedDevice?.name ?? "SmartFin")
                         sessionState = .active
                         sessionManager.startSession()
-                        // Enable water lock (watchOS hardware) if available
-                        #if os(watchOS)
                         WKInterfaceDevice.current().enableWaterLock()
-                        #endif
+                    } else {
+                        sessionState = .selectFin
                     }
-                )
-                .onAppear {
-                    // Simulate connection or use real BLE connection
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        if bluetoothManager.isConnected {
-                            sessionState = .active
-                            sessionManager.startSession()
-                        }
+                })
+
+            case .selectFin:
+                VStack(spacing: 8) {
+                    Button(action: {
+                        bluetoothManager.endDeviceSearch()
+                        sessionState = .ready
+                    }) {
+                        Text("Cancel")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.bordered)
+                    .tint(.gray)
+
+                    ConnectionView(bluetoothManager: bluetoothManager)
                 }
+                .padding(.horizontal, 4)
 
             case .active:
                 ActiveSessionView(
@@ -78,6 +75,8 @@ struct SessionFlowView: View {
                 SessionHistoryView(
                     sessions: sessionManager.savedSessions,
                     onNewSession: {
+                        bluetoothManager.disconnect()
+                        bluetoothManager.endDeviceSearch()
                         sessionState = .ready
                         sessionManager.reset()
                     }
@@ -88,11 +87,14 @@ struct SessionFlowView: View {
             sessionManager.bindBluetoothManager(bluetoothManager)
         }
         .onChange(of: bluetoothManager.isConnected) { connected in
-            // If we were waiting for a connection and the manager reports
-            // connected, move into the active session state.
-            if connected && sessionState == .connecting {
+            guard connected else { return }
+            if sessionState == .selectFin {
+                sessionManager.prepareSession(deviceName: bluetoothManager.connectedDevice?.name ?? "SmartFin")
                 sessionState = .active
                 sessionManager.startSession()
+                #if os(watchOS)
+                WKInterfaceDevice.current().enableWaterLock()
+                #endif
             }
         }
     }
@@ -100,6 +102,6 @@ struct SessionFlowView: View {
 
 #Preview {
     NavigationStack {
-        SessionFlowView(bluetoothManager: MockBluetoothManager(), sessionManager: SessionManager())
+        SessionFlowView(bluetoothManager: BluetoothManager(), sessionManager: SessionManager())
     }
 }

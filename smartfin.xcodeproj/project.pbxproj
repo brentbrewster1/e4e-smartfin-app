@@ -84,7 +84,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				BluetoothManager.swift,
-				MockBluetoothManager.swift,
 				NetworkManager.swift,
 				SessionManager.swift,
 			);

@@ -1,0 +1,272 @@
+---
+path:            '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/watchsimulator/prebuilt-modules/11.2/SwiftUI.swiftmodule/x86_64-apple-watchos-simulator.swiftmodule'
+dependencies:
+  - mtime:           1733472728000000000
+    path:            '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/watchsimulator/prebuilt-modules/11.2/SwiftUI.swiftmodule/x86_64-apple-watchos-simulator.swiftmodule'
+    size:            3272292
+  - mtime:           1731224423000000000
+    path:            'usr/lib/swift/Swift.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            2083682
+    sdk_relative:    true
+  - mtime:           1731224934000000000
+    path:            'usr/include/_time.apinotes'
+    size:            1132
+    sdk_relative:    true
+  - mtime:           1731227095000000000
+    path:            'usr/include/ObjectiveC.apinotes'
+    size:            11147
+    sdk_relative:    true
+  - mtime:           1731221471000000000
+    path:            'usr/include/Dispatch.apinotes'
+    size:            19
+    sdk_relative:    true
+  - mtime:           1731298644000000000
+    path:            'System/Library/Frameworks/Security.framework/Headers/Security.apinotes'
+    size:            162
+    sdk_relative:    true
+  - mtime:           1731228215000000000
+    path:            'System/Library/Frameworks/Foundation.framework/Headers/Foundation.apinotes'
+    size:            81098
+    sdk_relative:    true
+  - mtime:           1731225164000000000
+    path:            'usr/lib/swift/_errno.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            3717
+    sdk_relative:    true
+  - mtime:           1731225196000000000
+    path:            'usr/lib/swift/_signal.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            1002
+    sdk_relative:    true
+  - mtime:           1731225201000000000
+    path:            'usr/lib/swift/sys_time.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            1003
+    sdk_relative:    true
+  - mtime:           1731225186000000000
+    path:            'usr/lib/swift/_time.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            966
+    sdk_relative:    true
+  - mtime:           1731225188000000000
+    path:            'usr/lib/swift/_stdio.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            1428
+    sdk_relative:    true
+  - mtime:           1731225209000000000
+    path:            'usr/lib/swift/unistd.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            698
+    sdk_relative:    true
+  - mtime:           1731225164000000000
+    path:            'usr/lib/swift/_math.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            23971
+    sdk_relative:    true
+  - mtime:           1731224482000000000
+    path:            'usr/lib/swift/_Builtin_float.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            5814
+    sdk_relative:    true
+  - mtime:           1731225225000000000
+    path:            'usr/lib/swift/Darwin.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            19780
+    sdk_relative:    true
+  - mtime:           1731225849000000000
+    path:            'usr/lib/swift/_Concurrency.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            248692
+    sdk_relative:    true
+  - mtime:           1731226104000000000
+    path:            'usr/lib/swift/_StringProcessing.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            22669
+    sdk_relative:    true
+  - mtime:           1731226765000000000
+    path:            'System/Library/Frameworks/Combine.framework/Modules/Combine.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            172319
+    sdk_relative:    true
+  - mtime:           1731226713000000000
+    path:            'usr/lib/swift/ObjectiveC.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            6434
+    sdk_relative:    true
+  - mtime:           1731226911000000000
+    path:            'usr/lib/swift/Dispatch.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            56583
+    sdk_relative:    true
+  - mtime:           1731227071000000000
+    path:            'usr/lib/swift/CoreFoundation.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            22802
+    sdk_relative:    true
+  - mtime:           1731225857000000000
+    path:            'usr/lib/swift/Observation.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            3745
+    sdk_relative:    true
+  - mtime:           1731226722000000000
+    path:            'usr/lib/swift/System.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            94369
+    sdk_relative:    true
+  - mtime:           1731227910000000000
+    path:            'System/Library/Frameworks/Foundation.framework/Modules/Foundation.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            997393
+    sdk_relative:    true
+  - mtime:           1731227987000000000
+    path:            'System/Library/Frameworks/CoreGraphics.framework/Headers/CoreGraphics.apinotes'
+    size:            52901
+    sdk_relative:    true
+  - mtime:           1731228111000000000
+    path:            'System/Library/Frameworks/CoreGraphics.framework/Modules/CoreGraphics.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            52739
+    sdk_relative:    true
+  - mtime:           1731646740000000000
+    path:            'System/Library/Frameworks/CoreLocation.framework/Headers/CoreLocation.apinotes'
+    size:            1557
+    sdk_relative:    true
+  - mtime:           1731224934000000000
+    path:            'usr/include/os.apinotes'
+    size:            1658
+    sdk_relative:    true
+  - mtime:           1731227069000000000
+    path:            'usr/lib/swift/os.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            107944
+    sdk_relative:    true
+  - mtime:           1731229424000000000
+    path:            'usr/lib/swift/CoreLocation.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            19002
+    sdk_relative:    true
+  - mtime:           1731228633000000000
+    path:            'System/Library/Frameworks/UniformTypeIdentifiers.framework/Headers/UniformTypeIdentifiers.apinotes'
+    size:            1666
+    sdk_relative:    true
+  - mtime:           1731227845000000000
+    path:            'usr/lib/swift/UniformTypeIdentifiers.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            20461
+    sdk_relative:    true
+  - mtime:           1731229051000000000
+    path:            'System/Library/Frameworks/CoreTransferable.framework/Modules/CoreTransferable.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            22310
+    sdk_relative:    true
+  - mtime:           1731225979000000000
+    path:            'usr/lib/swift/Distributed.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            26871
+    sdk_relative:    true
+  - mtime:           1731228353000000000
+    path:            'System/Library/Frameworks/Network.framework/Headers/Network.apinotes'
+    size:            213
+    sdk_relative:    true
+  - mtime:           1731228432000000000
+    path:            'System/Library/Frameworks/Network.framework/Modules/Network.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            79213
+    sdk_relative:    true
+  - mtime:           1731228805000000000
+    path:            'System/Library/Frameworks/ExtensionFoundation.framework/Modules/ExtensionFoundation.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            5456
+    sdk_relative:    true
+  - mtime:           1731648846000000000
+    path:            'System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            727570
+    sdk_relative:    true
+  - mtime:           1731228723000000000
+    path:            'System/Library/Frameworks/CoreText.framework/Headers/CoreText.apinotes'
+    size:            1662
+    sdk_relative:    true
+  - mtime:           1731587397000000000
+    path:            'System/Library/Frameworks/UIKit.framework/Headers/UIKit.apinotes'
+    size:            162201
+    sdk_relative:    true
+  - mtime:           1731228743000000000
+    path:            'System/Library/Frameworks/Accessibility.framework/Modules/Accessibility.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            21171
+    sdk_relative:    true
+  - mtime:           1731228803000000000
+    path:            'System/Library/Frameworks/CoreText.framework/Modules/CoreText.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            1430
+    sdk_relative:    true
+  - mtime:           1731228185000000000
+    path:            'System/Library/Frameworks/DeveloperToolsSupport.framework/Modules/DeveloperToolsSupport.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            10769
+    sdk_relative:    true
+  - mtime:           1731228580000000000
+    path:            'System/Library/Frameworks/Symbols.framework/Modules/Symbols.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            21445
+    sdk_relative:    true
+  - mtime:           1731299974000000000
+    path:            'System/Library/Frameworks/UIKit.framework/Modules/UIKit.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            23959
+    sdk_relative:    true
+  - mtime:           1731230088000000000
+    path:            'System/Library/Frameworks/LocalAuthentication.framework/Headers/LocalAuthentication.apinotes'
+    size:            83
+    sdk_relative:    true
+  - mtime:           1731230093000000000
+    path:            'System/Library/Frameworks/LocalAuthentication.framework/Modules/LocalAuthentication.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            1254
+    sdk_relative:    true
+  - mtime:           1731228515000000000
+    path:            'System/Library/Frameworks/CryptoKit.framework/Modules/CryptoKit.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            67348
+    sdk_relative:    true
+  - mtime:           1731300788000000000
+    path:            'System/Library/Frameworks/ClockKit.framework/Modules/ClockKit.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            2770
+    sdk_relative:    true
+  - mtime:           1731227770000000000
+    path:            'System/Library/Frameworks/CoreData.framework/Headers/CoreData.apinotes'
+    size:            7789
+    sdk_relative:    true
+  - mtime:           1731227829000000000
+    path:            'System/Library/Frameworks/CoreData.framework/Modules/CoreData.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            42253
+    sdk_relative:    true
+  - mtime:           1731228089000000000
+    path:            'usr/lib/swift/OSLog.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            1147
+    sdk_relative:    true
+  - mtime:           1731226781000000000
+    path:            'usr/lib/swift/simd.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            218608
+    sdk_relative:    true
+  - mtime:           1731226896000000000
+    path:            'usr/lib/swift/Spatial.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            99064
+    sdk_relative:    true
+  - mtime:           1731231524000000000
+    path:            'System/Library/Frameworks/MapKit.framework/Headers/MapKit.apinotes'
+    size:            11481
+    sdk_relative:    true
+  - mtime:           1731238448000000000
+    path:            'System/Library/Frameworks/SceneKit.framework/Headers/SceneKit.apinotes'
+    size:            13614
+    sdk_relative:    true
+  - mtime:           1731231060000000000
+    path:            'System/Library/Frameworks/HomeKit.framework/Headers/HomeKit.apinotes'
+    size:            2746
+    sdk_relative:    true
+  - mtime:           1731232296000000000
+    path:            'System/Library/Frameworks/WatchKit.framework/Headers/WatchKit.apinotes'
+    size:            975
+    sdk_relative:    true
+  - mtime:           1731231722000000000
+    path:            'System/Library/Frameworks/HomeKit.framework/Modules/HomeKit.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            2377
+    sdk_relative:    true
+  - mtime:           1731228192000000000
+    path:            'usr/lib/swift/SceneKit.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            4821
+    sdk_relative:    true
+  - mtime:           1731230868000000000
+    path:            'usr/lib/swift/MapKit.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            1577
+    sdk_relative:    true
+  - mtime:           1731232994000000000
+    path:            'usr/lib/swift/WatchKit.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            2420
+    sdk_relative:    true
+  - mtime:           1731228760000000000
+    path:            'System/Library/Frameworks/QuartzCore.framework/Headers/QuartzCore.apinotes'
+    size:            7428
+    sdk_relative:    true
+  - mtime:           1731299277000000000
+    path:            'System/Library/Frameworks/SwiftUICore.framework/Modules/SwiftUICore.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            1008503
+    sdk_relative:    true
+  - mtime:           1731228618000000000
+    path:            'System/Library/Frameworks/UserNotifications.framework/Headers/UserNotifications.apinotes'
+    size:            326
+    sdk_relative:    true
+  - mtime:           1731302589000000000
+    path:            'System/Library/Frameworks/SwiftUI.framework/Modules/SwiftUI.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface'
+    size:            1295117
+    sdk_relative:    true
+version:         1
+...
