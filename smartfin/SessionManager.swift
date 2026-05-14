@@ -26,18 +26,7 @@ class SessionManager: NSObject, ObservableObject {
     private var timer: Timer?
     private var lastTemperatureF: Double = 67.0
 
-    // Collected readings now include ensemble metadata (IMU, water status, etc.)
-    private struct CollectedReading: Codable {
-        let ensembleType: String
-        let temperature: Double
-        let waterStatus: String
-        let imuMatrix: [Double]?
-        let imuSamples: [[Double]]?
-        let timestamp: Date
-        let finElapsedTimeDeciseconds: UInt32?
-    }
-
-    private var collectedReadings: [CollectedReading] = []
+    private var collectedReadings: [SessionReadingRecord] = []
     private var currentDeviceName: String = "SmartFin"
     private var locationManager: CLLocationManager?
     private var currentLocation: CLLocationCoordinate2D?
@@ -200,7 +189,7 @@ class SessionManager: NSObject, ObservableObject {
     ) {
         currentTemperature = temperature
 
-        let reading = CollectedReading(
+        let reading = SessionReadingRecord(
             ensembleType: ensembleType,
             temperature: temperature,
             waterStatus: waterStatus,
@@ -267,28 +256,13 @@ class SessionManager: NSObject, ObservableObject {
         await uploadToServer(session: session)
     }
 
-    private func persistSessionReadings(sessionId: UUID, readings: [CollectedReading]) {
-        guard let dir = applicationSupportSessionsDirectory() else { return }
-        let url = dir.appendingPathComponent("\(sessionId.uuidString).json", isDirectory: false)
+    private func persistSessionReadings(sessionId: UUID, readings: [SessionReadingRecord]) {
+        guard let url = SessionReadingsFileStore.readingsFileURL(sessionId: sessionId) else { return }
         do {
             let data = try JSONEncoder().encode(readings)
             try data.write(to: url, options: .atomic)
         } catch {
             print("Session readings save failed: \(error.localizedDescription)")
-        }
-    }
-
-    private func applicationSupportSessionsDirectory() -> URL? {
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        let dir = appSupport.appendingPathComponent("SmartFinSessionReadings", isDirectory: true)
-        do {
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            return dir
-        } catch {
-            print("Could not create sessions directory: \(error.localizedDescription)")
-            return nil
         }
     }
     

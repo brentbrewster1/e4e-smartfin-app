@@ -1,0 +1,858 @@
+# SmartFin Apple Watch Data Capture + Local Storage Implementation Brief
+
+Goal:
+Build the Apple Watch side of the SmartFin research pipeline.
+
+The watch app needs to:
+1. Receive raw data packets from the SmartFin device.
+2. Parse and validate each packet.
+3. Decode the payload based on packet type.
+4. Match fin sensor timestamps with Apple Watch GPS timestamps.
+5. Save raw packets and parsed readings locally on the watch.
+6. Mark records as unsent so they can later be uploaded to the Django REST API.
+
+---
+
+## 1. Raw Packet Format
+
+The SmartFin sends packets in this envelope format:
+
+```text
++---------+---------+--------+-----------+---------...--------+
+| version | type    | seq    | payloadLen | payload            |
+| 1 byte  | 1 byte  | 2 bytes| 2 bytes    | up to 230 bytes    |
++---------+---------+--------+-----------+---------...--------+
+```
+
+Expected byte layout:
+
+```text
+byte 0: version
+byte 1: type
+byte 2-3: sequence number
+byte 4-5: payload length
+byte 6...: payload
+```
+
+Important:
+- Confirm endianness with the SmartFin team.
+- Until confirmed, implement parsing with a configurable byte order.
+- Default assumption: little-endian for UInt16 values.
+- Validate that payloadLen equals the number of bytes after the 6-byte header.
+- Preserve the raw packet bytes during development for debugging.
+
+---
+
+## 2. Recommended Watch App Components
+
+Create these Swift components:
+
+```text
+SmartFinBLEManager
+- Handles BLE connection to SmartFin.
+- Subscribes to the packet characteristic.
+- Receives raw Data objects from the device.
+- Passes raw packet Data to PacketParser.
+
+PacketParser
+- Parses the 6-byte packet header.
+- Validates version, type, seq, and payloadLen.
+- Extracts payload.
+- Returns a SmartFinPacket struct.
+
+PayloadDecoder
+- Decodes payload based on packet type.
+- Converts raw payload into typed sensor readings.
+- This will need to be updated once the payload layout is confirmed.
+
+SequenceTracker
+- Tracks last sequence number.
+- Detects missing, duplicate, or out-of-order packets.
+- Adds debug flags to saved packet records.
+
+SensorTimeAligner
+- Converts fin timestamps into watch/UTC timestamps.
+- Handles offset between fin time and watch time if fin uses relative time.
+- Matches sensor readings to the nearest GPS point.
+
+LocationManager
+- Uses CoreLocation on watchOS.
+- Records GPS samples with timestamp, latitude, longitude, horizontal accuracy, speed if available.
+- Provides nearest-GPS lookup for a given sensor timestamp.
+
+LocalDataStore
+- Saves raw packets and parsed readings locally.
+- Can use SwiftData, Core Data, or SQLite.
+- Recommended MVP: SwiftData if the project supports modern watchOS.
+- Safer/debuggable alternative: SQLite through GRDB or raw SQLite.
+
+UploadQueue
+- Not the main focus yet, but local records should include uploadStatus.
+- Records should be saved as unsent by default.
+```
+
+---
+
+## 3. Local Storage Schema
+
+Use these conceptual models. If using SwiftData, implement them as `@Model` classes. If using SQLite/Core Data, use equivalent tables/entities.
+
+### SurfSession
+
+```text
+id: UUID
+startedAt: Date
+endedAt: Date?
+deviceId: String?
+watchId: String?
+status: String
+createdAt: Date
+updatedAt: Date
+```
+
+Example status values:
+
+```text
+active
+completed
+uploading
+uploaded
+failed
+```
+
+### RawPacketRecord
+
+Save the original packet bytes for debugging and reprocessing.
+
+```text
+id: UUID
+sessionId: UUID
+receivedAt: Date
+
+version: UInt8
+type: UInt8
+seq: UInt16
+payloadLen: UInt16
+
+rawBytes: Data
+payloadBytes: Data
+
+isValid: Bool
+parseError: String?
+
+isDuplicate: Bool
+isOutOfOrder: Bool
+isMissingPrevious: Bool
+
+createdAt: Date
+```
+
+Why save this:
+- If payload parsing is wrong, we can reprocess the raw packet later.
+- This is important for a research project because we need reproducibility and debugging.
+
+### GPSSample
+
+Stores Apple Watch GPS samples.
+
+```text
+id: UUID
+sessionId: UUID
+timestamp: Date
+
+latitude: Double
+longitude: Double
+horizontalAccuracy: Double?
+altitude: Double?
+speed: Double?
+course: Double?
+
+createdAt: Date
+```
+
+### SensorReading
+
+Stores decoded and timestamp-aligned SmartFin readings.
+
+```text
+id: UUID
+sessionId: UUID
+rawPacketId: UUID?
+
+ensembleType: String
+
+finTimestampRaw: Int64?
+finTimestampUnit: String?
+watchTimestamp: Date
+watchReceivedAt: Date
+
+temperature: Double?
+waterStatus: String?
+
+accelX: Double?
+accelY: Double?
+accelZ: Double?
+
+gyroX: Double?
+gyroY: Double?
+gyroZ: Double?
+
+magX: Double?
+magY: Double?
+magZ: Double?
+
+gpsSampleId: UUID?
+gpsLatitude: Double?
+gpsLongitude: Double?
+gpsHorizontalAccuracy: Double?
+gpsTimeDeltaMs: Double?
+
+sourceSeq: UInt16?
+
+uploadStatus: String
+uploadedAt: Date?
+uploadError: String?
+
+createdAt: Date
+updatedAt: Date
+```
+
+Example uploadStatus values:
+
+```text
+pending
+uploading
+uploaded
+failed
+```
+
+---
+
+## 4. Swift Structs
+
+Create a packet model:
+
+```swift
+struct SmartFinPacket {
+    let version: UInt8
+    let type: UInt8
+    let seq: UInt16
+    let payloadLen: UInt16
+    let payload: Data
+    let rawData: Data
+    let receivedAt: Date
+}
+```
+
+Create decoded reading models:
+
+```swift
+struct DecodedSensorReading {
+    let ensembleType: String
+    let finTimestampRaw: Int64?
+    let finTimestampUnit: String?
+    let temperature: Double?
+    let waterStatus: String?
+    let accel: SIMD3<Double>?
+    let gyro: SIMD3<Double>?
+    let mag: SIMD3<Double>?
+}
+```
+
+Create GPS model:
+
+```swift
+struct WatchGPSSample {
+    let timestamp: Date
+    let latitude: Double
+    let longitude: Double
+    let horizontalAccuracy: Double?
+    let altitude: Double?
+    let speed: Double?
+    let course: Double?
+}
+```
+
+---
+
+## 5. Packet Parser Behavior
+
+Create a `PacketParser` class or struct.
+
+Responsibilities:
+1. Reject packets shorter than 6 bytes.
+2. Read version from byte 0.
+3. Read type from byte 1.
+4. Read seq from bytes 2-3.
+5. Read payloadLen from bytes 4-5.
+6. Extract payload from byte 6 onward.
+7. Validate that payload.count == payloadLen.
+8. Return `SmartFinPacket`.
+9. Throw or return a parse error if invalid.
+
+Pseudo-code:
+
+```swift
+func parse(_ data: Data, receivedAt: Date = Date()) throws -> SmartFinPacket {
+    guard data.count >= 6 else {
+        throw PacketParseError.tooShort
+    }
+
+    let version = data[0]
+    let type = data[1]
+
+    let seq = readUInt16(data, offset: 2, endianness: .little)
+    let payloadLen = readUInt16(data, offset: 4, endianness: .little)
+
+    let payload = data.subdata(in: 6..<data.count)
+
+    guard payload.count == Int(payloadLen) else {
+        throw PacketParseError.invalidPayloadLength(
+            expected: Int(payloadLen),
+            actual: payload.count
+        )
+    }
+
+    return SmartFinPacket(
+        version: version,
+        type: type,
+        seq: seq,
+        payloadLen: payloadLen,
+        payload: payload,
+        rawData: data,
+        receivedAt: receivedAt
+    )
+}
+```
+
+Add an enum:
+
+```swift
+enum PacketParseError: Error {
+    case tooShort
+    case invalidPayloadLength(expected: Int, actual: Int)
+    case unsupportedVersion(UInt8)
+    case unknownType(UInt8)
+}
+```
+
+---
+
+## 6. Sequence Tracking
+
+Create a `SequenceTracker`.
+
+Goal:
+Detect packet gaps, duplicates, and out-of-order packets.
+
+Behavior:
+- Store the last sequence number received.
+- For the first packet, accept it.
+- If seq == lastSeq, mark duplicate.
+- If seq == lastSeq + 1, normal.
+- If seq > lastSeq + 1, mark missing previous packet(s).
+- If seq < lastSeq, mark out-of-order unless sequence rollover is expected.
+- Account for UInt16 rollover from 65535 back to 0.
+
+Pseudo-code:
+
+```swift
+final class SequenceTracker {
+    private var lastSeq: UInt16?
+
+    func inspect(seq: UInt16) -> SequenceStatus {
+        guard let last = lastSeq else {
+            lastSeq = seq
+            return .normal
+        }
+
+        let expected = last &+ 1
+
+        if seq == last {
+            return .duplicate
+        }
+
+        if seq == expected {
+            lastSeq = seq
+            return .normal
+        }
+
+        if isSeqAhead(seq, comparedTo: expected) {
+            lastSeq = seq
+            return .missingPrevious(expected: expected, actual: seq)
+        }
+
+        return .outOfOrder(expected: expected, actual: seq)
+    }
+}
+```
+
+---
+
+## 7. Payload Decoding
+
+The exact payload format is not fully known yet.
+
+Implement the decoder as a switch by packet type, but leave clear TODOs until the SmartFin payload spec is confirmed.
+
+Known API ensemble types from backend:
+
+```text
+01 = Temperature + water status only
+11 = Full set: temperature, water, 9-axis IMU, GPS
+12 = High data rate IMU only
+```
+
+Create something like:
+
+```swift
+func decode(packet: SmartFinPacket) throws -> DecodedSensorReading {
+    switch packet.type {
+    case 0x01:
+        return try decodeTemperatureWater(packet.payload)
+
+    case 0x11:
+        return try decodeFullSet(packet.payload)
+
+    case 0x12:
+        return try decodeHighRateIMU(packet.payload)
+
+    default:
+        throw PacketParseError.unknownType(packet.type)
+    }
+}
+```
+
+Important TODO:
+Ask SmartFin team for:
+- Endianness.
+- Timestamp format.
+- Payload layout per type.
+- Temperature units and scaling.
+- IMU units and scaling.
+- Water status encoding.
+- Whether type values are ASCII strings, numeric bytes, or another enum.
+
+---
+
+## 8. Timestamp Handling
+
+This is the most important part.
+
+### Case A: Fin timestamp is real UTC/Unix time
+
+If the fin timestamp is Unix milliseconds, convert directly:
+
+```swift
+let watchTimestamp = Date(timeIntervalSince1970: Double(finTimestampMs) / 1000.0)
+```
+
+### Case B: Fin timestamp is relative time since boot/session
+
+If the fin timestamp is milliseconds since fin boot, the watch must estimate a time offset.
+
+When the first valid fin packet arrives:
+
+```text
+finTimeAtReceive = packet.finTimestampRaw
+watchTimeAtReceive = packet.receivedAt
+offset = watchTimeAtReceive - finTimeAtReceive
+```
+
+Then:
+
+```text
+estimatedWatchTimestamp = offset + finTimestampRaw
+```
+
+Store:
+- `finTimestampRaw`
+- `finTimestampUnit`
+- `watchReceivedAt`
+- `watchTimestamp`
+
+This makes the dataset auditable.
+
+---
+
+## 9. GPS Matching
+
+Use nearest-neighbor matching for MVP.
+
+Algorithm:
+1. Keep a rolling list of recent GPS samples.
+2. When a decoded sensor reading has a watchTimestamp, find the GPS sample with the smallest absolute time difference.
+3. Only match if the difference is below a threshold.
+
+Recommended threshold:
+
+```text
+maxGpsMatchGap = 2.0 seconds
+```
+
+Pseudo-code:
+
+```swift
+func nearestGPSSample(to timestamp: Date, maxGapSeconds: TimeInterval = 2.0) -> WatchGPSSample? {
+    let closest = gpsSamples.min {
+        abs($0.timestamp.timeIntervalSince(timestamp)) <
+        abs($1.timestamp.timeIntervalSince(timestamp))
+    }
+
+    guard let closest else { return nil }
+
+    let delta = abs(closest.timestamp.timeIntervalSince(timestamp))
+
+    guard delta <= maxGapSeconds else {
+        return nil
+    }
+
+    return closest
+}
+```
+
+Store the GPS time delta in milliseconds:
+
+```swift
+gpsTimeDeltaMs = gps.timestamp.timeIntervalSince(sensorTimestamp) * 1000.0
+```
+
+---
+
+## 10. BLE Manager Shape
+
+Create a BLE manager using CoreBluetooth.
+
+```swift
+final class SmartFinBLEManager: NSObject, ObservableObject {
+    @Published var connectionState: ConnectionState = .disconnected
+
+    private var centralManager: CBCentralManager?
+    private var peripheral: CBPeripheral?
+    private let packetParser: PacketParser
+    private let dataStore: LocalDataStore
+}
+```
+
+Responsibilities:
+- Start scanning for SmartFin peripheral.
+- Connect to device.
+- Discover services.
+- Discover characteristics.
+- Subscribe to the data characteristic.
+- On notification, receive `Data`.
+- Parse packet.
+- Save raw packet.
+- Decode payload.
+- Timestamp-align.
+- Match GPS.
+- Save SensorReading as pending upload.
+
+Pseudo-flow:
+
+```swift
+func peripheral(
+    _ peripheral: CBPeripheral,
+    didUpdateValueFor characteristic: CBCharacteristic,
+    error: Error?
+) {
+    guard error == nil else { return }
+    guard let data = characteristic.value else { return }
+
+    let receivedAt = Date()
+
+    do {
+        let packet = try packetParser.parse(data, receivedAt: receivedAt)
+        let sequenceStatus = sequenceTracker.inspect(seq: packet.seq)
+
+        let rawPacketRecordId = try dataStore.saveRawPacket(
+            packet,
+            sequenceStatus: sequenceStatus
+        )
+
+        let decoded = try payloadDecoder.decode(packet: packet)
+
+        let watchTimestamp = timeAligner.toWatchTime(
+            finTimestampRaw: decoded.finTimestampRaw,
+            receivedAt: receivedAt
+        )
+
+        let gps = locationManager.nearestGPSSample(to: watchTimestamp)
+
+        try dataStore.saveSensorReading(
+            decoded,
+            rawPacketId: rawPacketRecordId,
+            packet: packet,
+            watchTimestamp: watchTimestamp,
+            gps: gps
+        )
+
+    } catch {
+        try? dataStore.saveInvalidRawPacket(data, receivedAt: receivedAt, error: error)
+    }
+}
+```
+
+---
+
+## 11. Location Manager
+
+Use CoreLocation.
+
+Responsibilities:
+- Request location authorization.
+- Start location updates during an active surf session.
+- Save GPS points locally.
+- Keep recent samples in memory for fast nearest-neighbor matching.
+
+Pseudo-shape:
+
+```swift
+final class WatchLocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    private let dataStore: LocalDataStore
+    private var recentSamples: [WatchGPSSample] = []
+
+    func startSessionLocationUpdates(sessionId: UUID) {
+        manager.requestWhenInUseAuthorization()
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.distanceFilter = kCLDistanceFilterNone
+        manager.startUpdatingLocation()
+    }
+
+    func stopSessionLocationUpdates() {
+        manager.stopUpdatingLocation()
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        for location in locations {
+            let sample = WatchGPSSample(
+                timestamp: location.timestamp,
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude,
+                horizontalAccuracy: location.horizontalAccuracy,
+                altitude: location.altitude,
+                speed: location.speed,
+                course: location.course
+            )
+
+            recentSamples.append(sample)
+            trimRecentSamples()
+            try? dataStore.saveGPSSample(sample)
+        }
+    }
+}
+```
+
+---
+
+## 12. Save Locally First
+
+Every valid reading should be saved locally before upload.
+
+This is important because:
+- The watch may have no cellular connection.
+- The user may be surfing away from the iPhone.
+- Upload may fail.
+- Research data should not be lost.
+
+Each `SensorReading` starts with:
+
+```text
+uploadStatus = pending
+uploadedAt = nil
+```
+
+Later the uploader can query:
+
+```text
+all readings where uploadStatus == pending
+```
+
+and send them to the backend.
+
+---
+
+## 13. Backend Upload Shape To Prepare For
+
+The current backend supports:
+
+```text
+POST /api/upload
+Authorization: Token <token>
+```
+
+But for the watch, prepare records so they can be uploaded in batches.
+
+Recommended future endpoint:
+
+```text
+POST /api/upload/batch
+```
+
+Expected batch JSON:
+
+```json
+{
+  "session_id": "WATCH_SESSION_UUID",
+  "device_id": "SMARTFIN_DEVICE_ID",
+  "readings": [
+    {
+      "ensemble_type": "11",
+      "timestamp": "2026-04-28T10:32:00.120Z",
+      "temperature": 19.4,
+      "water_status": "in_water",
+      "gps": {
+        "lat": 32.81,
+        "lon": -117.23,
+        "accuracy_m": 6.2
+      },
+      "imu": {
+        "accel": [0.1, -0.2, 9.8],
+        "gyro": [0.01, -0.03, 0.02],
+        "mag": [23.1, -4.5, 41.2]
+      },
+      "source_seq": 412,
+      "fin_timestamp_raw": 123456789,
+      "watch_received_at": "2026-04-28T10:32:00.140Z",
+      "gps_time_delta_ms": -340.0
+    }
+  ]
+}
+```
+
+Design the local model so we can produce this JSON later.
+
+---
+
+## 14. MVP Implementation Order
+
+Implement in this order:
+
+```text
+1. Create packet parser.
+2. Add unit tests for parsing the 6-byte header.
+3. Add sequence tracker.
+4. Save raw packets locally.
+5. Add placeholder payload decoder with TODOs.
+6. Add GPS collection.
+7. Add timestamp normalizer.
+8. Add nearest-GPS matcher.
+9. Save parsed SensorReading locally.
+10. Add pending/uploaded status fields.
+```
+
+Do not start with backend upload until:
+- packets are being received,
+- raw data is saved,
+- timestamps are understood,
+- GPS matching works locally.
+
+---
+
+## 15. Testing Checklist
+
+Create tests for:
+
+```text
+PacketParser
+- rejects packets shorter than 6 bytes
+- parses version/type/seq/payloadLen correctly
+- rejects mismatched payload length
+- handles little-endian UInt16
+- can be switched to big-endian if needed
+
+SequenceTracker
+- accepts normal increasing seq
+- detects duplicate seq
+- detects missing packets
+- detects out-of-order packets
+- handles UInt16 rollover
+
+TimestampAligner
+- converts Unix ms correctly
+- converts relative fin time using offset
+- stores raw timestamp and watch timestamp
+
+GPSMatcher
+- finds nearest GPS point
+- rejects GPS point if outside max gap
+- records gpsTimeDeltaMs
+```
+
+---
+
+## 16. Information Still Needed From SmartFin Team
+
+Before final payload decoding can be completed, ask for:
+
+```text
+1. BLE service UUID.
+2. BLE characteristic UUID.
+3. Whether packets are sent by BLE notification or read.
+4. Confirm packet endianness.
+5. Confirm whether seq resets each session or device reboot.
+6. Payload format for each packet type.
+7. Timestamp format and units.
+8. Temperature units and scaling.
+9. IMU units and scaling.
+10. Water status encoding.
+11. Expected sampling rates.
+12. Whether packets can be fragmented.
+13. Whether payloadLen can ever be 0.
+14. Whether packet type values are numeric bytes or ASCII values.
+```
+
+---
+
+## 17. Recommended First Cursor Task
+
+Start by implementing these files:
+
+```text
+SmartFinPacket.swift
+PacketParser.swift
+PacketParseError.swift
+SequenceTracker.swift
+SequenceStatus.swift
+DecodedSensorReading.swift
+PayloadDecoder.swift
+WatchGPSSample.swift
+SensorTimeAligner.swift
+```
+
+Then write unit tests for:
+
+```text
+PacketParserTests.swift
+SequenceTrackerTests.swift
+SensorTimeAlignerTests.swift
+GPSMatcherTests.swift
+```
+
+Once those are stable, connect the parser to the BLE callback.
+
+---
+
+## 18. Important Implementation Principle
+
+For this research project, do not throw away raw data.
+
+Always save:
+
+```text
+raw packet bytes
+parsed header
+receivedAt timestamp
+sequence number
+parse status
+decoded values
+matched GPS point
+upload status
+```
+
+This makes the data traceable from:
+
+```text
+SmartFin packet → watch reading → uploaded backend record → frontend/research analysis
+```

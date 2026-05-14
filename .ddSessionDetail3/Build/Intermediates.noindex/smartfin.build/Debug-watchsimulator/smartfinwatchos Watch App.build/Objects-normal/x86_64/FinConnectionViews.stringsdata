@@ -1,0 +1,32 @@
+{
+  "source": "/Users/colecarter/e4e-smartfin-app-2/smartfinwatchos Watch App/FinConnectionViews.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Connect to",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 71
+        }
+      },
+      {
+        "comment": "",
+        "key": "Connect",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select SmartFin",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 103
+        }
+      }
+    ]
+  },
+  "version": 1
+}

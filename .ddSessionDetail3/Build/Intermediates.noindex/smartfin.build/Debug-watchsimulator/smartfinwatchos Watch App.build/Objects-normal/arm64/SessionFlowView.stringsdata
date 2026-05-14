@@ -1,0 +1,16 @@
+{
+  "source": "/Users/colecarter/e4e-smartfin-app-2/smartfinwatchos Watch App/SessionFlowView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 43
+        }
+      }
+    ]
+  },
+  "version": 1
+}

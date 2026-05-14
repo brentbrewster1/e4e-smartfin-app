@@ -1,0 +1,66 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "ae9e1a511b12a8dd1388e8b410947447b9df74b40cc130fe42dd54e862d53d71"
+    }
+  ],
+  "containerPath" : "/Users/colecarter/e4e-smartfin-app-2/smartfin.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "undefined_arch",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : true,
+      "platform" : "iphonesimulator",
+      "sdk" : "iphonesimulator18.2",
+      "sdkVariant" : "iphonesimulator",
+      "supportedArchitectures" : [
+        "i386",
+        "x86_64"
+      ],
+      "targetArchitecture" : "undefined_arch"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/colecarter/e4e-smartfin-app-2/.ddSessionDetail/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/colecarter/e4e-smartfin-app-2/.ddSessionDetail/Build/Products",
+      "derivedDataPath" : "/Users/colecarter/e4e-smartfin-app-2/.ddSessionDetail",
+      "indexDataStoreFolderPath" : "/Users/colecarter/e4e-smartfin-app-2/.ddSessionDetail/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/colecarter/e4e-smartfin-app-2/.ddSessionDetail/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/colecarter/e4e-smartfin-app-2/.ddSessionDetail/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+          "CODE_SIGN_IDENTITY" : "-",
+          "CODE_SIGNING_ALLOWED" : "NO"
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "CLANG_COVERAGE_MAPPING" : "YES",
+          "CLANG_PROFILE_DATA_DIRECTORY" : "/Users/colecarter/e4e-smartfin-app-2/.ddSessionDetail/Build/ProfileData",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}
