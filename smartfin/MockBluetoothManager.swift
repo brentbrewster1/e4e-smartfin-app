@@ -36,7 +36,7 @@ class MockBluetoothManager: BluetoothManager {
         // Avoid real CoreBluetooth in the iOS Simulator mock.
         centralManager = nil
         connectionStatus = "Simulator (Mock)"
-        isConnected = true
+        isConnected = false
         dataLog = ["Simulator mock active", "Emitting synthetic samples..."]
         simulatedPeripherals = [
             SimPeripheral(id: UUID(), name: "Mock SmartFin #1"),

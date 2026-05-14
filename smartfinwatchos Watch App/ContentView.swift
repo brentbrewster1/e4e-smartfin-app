@@ -9,11 +9,11 @@ import SwiftUI
 import CoreBluetooth
 
 struct ContentView: View {
-    @StateObject var bluetoothManager: BluetoothManager
+    @ObservedObject var bluetoothManager: BluetoothManager
     @State private var showSessionFlow = false
 
-    init(bluetoothManager: BluetoothManager = BluetoothManager()) {
-        _bluetoothManager = StateObject(wrappedValue: bluetoothManager)
+    init(bluetoothManager: BluetoothManager) {
+        _bluetoothManager = ObservedObject(wrappedValue: bluetoothManager)
     }
     
     var body: some View {
