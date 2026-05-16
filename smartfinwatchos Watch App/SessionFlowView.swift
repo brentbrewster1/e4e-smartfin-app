@@ -81,7 +81,9 @@ struct SessionFlowView: View {
                         sessionState = .ready
                         sessionManager.reset()
                     }
-                )
+                ).task {
+                    await sessionManager.syncSessions()
+                }
             }
         }
         .onChange(of: bluetoothManager.isConnected) { connected in

@@ -12,6 +12,7 @@ import CoreLocation
 
 // MARK: - Session Manager
 class SessionManager: NSObject, ObservableObject {
+    private var serverManager: ServerManager
     // MARK: - Published Properties
     @Published var isSessionActive = false
     @Published var elapsedTime: TimeInterval = 0
@@ -48,6 +49,7 @@ class SessionManager: NSObject, ObservableObject {
     
     // MARK: - Initialization
     override init() {
+        self.serverManager = ServerManager.shared
         super.init()
         // Avoid requesting location services during SwiftUI previews
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
@@ -293,6 +295,47 @@ class SessionManager: NSObject, ObservableObject {
     private func clearSavedData() {
         UserDefaults.standard.removeObject(forKey: "savedSessions")
         UserDefaults.standard.removeObject(forKey: "savedEnsembles")
+    }
+    
+    // MARK: - Syncing between local and server
+    func merge(_ remoteSessions: [SessionData]) {
+        var merged = savedSessions
+        
+        for remote in remoteSessions {
+            let existingIndex = merged.firstIndex { local in
+                // Match synced sessions - match based on serverID, but if local is nil then match on clientID
+                if let localServerId = local.serverId,
+                   let remoteServerId = remote.serverId {
+                    return localServerId == remoteServerId
+                }
+
+                // Match local UUIDs
+                return local.id == remote.id
+            }
+            if let index = existingIndex {
+                merged[index] = remote
+            } else {
+                // not stored locally! safe to just add to list
+                merged.append(remote)
+            }
+        }
+        savedSessions = merged
+    }
+    
+    // Get remote sessions, save locally if not already
+    func syncSessions() async {
+        do {
+            let remoteSessions = try await serverManager.getSessions()
+
+            merge(remoteSessions)
+
+            //try await uploadPendingSessions()
+
+            saveSessionsToDisk()
+
+        } catch {
+            print(error)
+        }
     }
 }
 

@@ -9,12 +9,12 @@ import Foundation
 
 struct SessionData: Identifiable, Codable {
     let id: UUID
-    let serverId: Int // -1 if not uploaded to server (or haven't received a response)
+    let serverId: Int? // nil if not uploaded yet 
     let startedAt: Date
     let endedAt: Date
     let duration: TimeInterval
     let samplesCollected: Int
-    let averageTemp: Double
+    let averageTemp: Double?
     let deviceName: String
     
     var formattedDate: String {
