@@ -209,7 +209,7 @@ class SessionManager: NSObject, ObservableObject {
             temperature: temperature,
             waterStatus: waterStatus,
             geoCoordinates: currentLocation.map { "\($0.latitude),\($0.longitude)" },
-            imuData: imuDataString,
+            imuData: imuDataString?.data(using: .utf8),
             timestamp: timestamp
         )
         
@@ -298,6 +298,45 @@ class SessionManager: NSObject, ObservableObject {
     }
     
     // MARK: - Syncing between local and server
+    // checks ensembles list and uploads any stragglers
+    func uploadPendingEnsembles() async {
+        for ensembleIndex in savedEnsembles.indices {
+            // Skip already-uploaded ensembles
+            guard savedEnsembles[ensembleIndex].serverId == nil else {
+                continue
+            }
+
+            let ensemble = savedEnsembles[ensembleIndex]
+
+            // Find corresponding session
+            guard let session = savedSessions.first(where: {
+                $0.id == ensemble.id
+            }) else {
+                print("Missing local session for ensemble \(ensemble.id)")
+                continue
+            }
+            
+            // Session must already exist on server
+            guard let serverSessionId = session.serverId else {
+                continue
+            }
+            
+            do {
+                // Upload ensemble
+                let serverId = try await serverManager.postEnsemble(ensemble, serverSessionId: serverSessionId)
+
+                // Update local ensemble with server ID
+                savedEnsembles[ensembleIndex].serverId = serverId
+
+            } catch {
+                print("Failed to upload ensemble \(ensemble.id): \(error)")
+            }
+        }
+
+        saveEnsemblesToDisk()
+    }
+    
+    // checks full local session list and uploads any stragglers
     func uploadPendingSessions() async {
         for index in savedSessions.indices {
             // Skip already-uploaded sessions
@@ -307,9 +346,7 @@ class SessionManager: NSObject, ObservableObject {
 
             do {
                 // Upload current local session
-                let serverID = try await serverManager.postSession(
-                    savedSessions[index]
-                )
+                let serverID = try await serverManager.postSession(savedSessions[index])
                 // Update local session with ID returned by server
                 savedSessions[index].serverId = serverID
 
@@ -321,7 +358,8 @@ class SessionManager: NSObject, ObservableObject {
         saveSessionsToDisk()
     }
     
-    func uploadToServer(_ session: SessionData) async -> SessionData? {
+    // for uploading individual sessions
+    func uploadSessionToServer(_ session: SessionData) async -> SessionData? {
         do {
             let sessionID = try await serverManager.postSession(session)
             
@@ -359,20 +397,33 @@ class SessionManager: NSObject, ObservableObject {
         savedSessions = merged
     }
     
-    // Get remote sessions, save locally if not already
+    // Get remote sessions, save locally if not already. Upload any session not yet in the server.
     func syncSessions() async {
         do {
             let remoteSessions = try await serverManager.getSessions()
-
             merge(remoteSessions)
 
-            //try await uploadPendingSessions()
+            await uploadPendingSessions()
 
             saveSessionsToDisk()
 
         } catch {
             print(error)
         }
+    }
+    
+    func syncEnsembles() async {
+        do {
+            // TODO: Pull from remote, merge with locally stored ensembles
+
+            await uploadPendingEnsembles()
+            saveEnsemblesToDisk()
+        }
+    }
+    
+    func syncData() async {
+        await uploadPendingSessions()
+        await uploadPendingEnsembles()
     }
 }
 
@@ -393,12 +444,12 @@ extension SessionManager: CLLocationManagerDelegate {
 // MARK: - Data Models for Server Upload
 struct EnsembleReading: Codable {
     let id: UUID
-    let serverId: Int? // nil if not uploaded to server (or haven't received a response)
+    var serverId: Int? // nil if not uploaded to server (or haven't received a response)
     let ensembleType: String
     let temperature: Double
     let waterStatus: String
     let geoCoordinates: String?
-    let imuData: String?
+    let imuData: Data?
     let timestamp: Date
 
     enum CodingKeys: String, CodingKey {
@@ -411,10 +462,4 @@ struct EnsembleReading: Codable {
         case imuData = "imu_data"
         case timestamp
     }
-}
-
-struct UploadPayload: Codable {
-    let deviceID: String
-    let value: [EnsembleReading]
-    let timestamp: Date
 }

@@ -63,6 +63,59 @@ class ServerManager: ObservableObject {
         // Return server ID for uploaded session
         return createResponse.id
     }
+    
+    func postEnsemble(
+        _ ensemble: EnsembleReading,
+        serverSessionId: Int
+    ) async throws -> Int {
+
+        guard let url = URL(string: SERVER_BASE_URL + "/ensembles/create") else {
+            throw URLError(.badURL)
+        }
+
+        // Build payload matching server expectations
+        let payload: [String: Any] = [
+            "session_id": serverSessionId,
+            "ensemble_type": ensemble.ensembleType,
+            "temperature": ensemble.temperature,
+            "water_status": ensemble.waterStatus,
+            "gps": ensemble.geoCoordinates as Any,
+            "imu": ensemble.imuData as Any
+        ]
+
+        let jsonData = try JSONSerialization.data(
+            withJSONObject: payload
+        )
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        request.setValue(
+            "application/json",
+            forHTTPHeaderField: "Content-Type"
+        )
+
+        request.httpBody = jsonData
+
+        let (data, response) = try await URLSession.shared.data(
+            for: request
+        )
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              200...299 ~= httpResponse.statusCode else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoder = JSONDecoder()
+
+        let uploadResponse = try decoder.decode(
+            CreatEnsembleResponse.self,
+            from: data
+        )
+
+        // Return assigned server ID for the associated session
+        return uploadResponse.id
+    }
 }
 
 struct ServerSession: Codable {
@@ -103,6 +156,11 @@ extension ServerSession {
 
 // Reponse models
 struct CreateSessionResponse: Codable {
+    let status: String
+    let id: Int
+}
+
+struct CreatEnsembleResponse: Codable {
     let status: String
     let id: Int
 }
