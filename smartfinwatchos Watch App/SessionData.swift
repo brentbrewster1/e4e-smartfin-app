@@ -9,7 +9,7 @@ import Foundation
 
 struct SessionData: Identifiable, Codable {
     let id: UUID
-    let serverId: Int? // nil if not uploaded yet 
+    var serverId: Int? // nil if not uploaded yet
     let startedAt: Date
     let endedAt: Date
     let duration: TimeInterval
@@ -39,5 +39,21 @@ struct SessionData: Identifiable, Codable {
         } else {
             return String(format: "%02d:%02d", minutes, seconds)
         }
+    }
+}
+
+extension SessionData {
+
+    func toServerSession() -> ServerSession {
+
+        ServerSession(
+            id: serverId ?? -1,
+            clientSessionId: id,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            duration: duration,
+            numEnsembles: samplesCollected,
+            averageTemp: averageTemp
+        )
     }
 }

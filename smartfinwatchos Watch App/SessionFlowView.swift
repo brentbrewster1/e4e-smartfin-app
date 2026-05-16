@@ -83,6 +83,7 @@ struct SessionFlowView: View {
                     }
                 ).task {
                     await sessionManager.syncSessions()
+                    await sessionManager.uploadPendingSessions() // attempt to upload any straggler sessions
                 }
             }
         }

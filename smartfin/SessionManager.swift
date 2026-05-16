@@ -172,7 +172,7 @@ class SessionManager: NSObject, ObservableObject {
 
         let ensemble = EnsembleReading(
             id: clientSessionId,
-            serverId: -1,
+            serverId: nil,
             ensembleType: "01",
             temperature: currentTemperature,
             waterStatus: "dry",
@@ -204,7 +204,7 @@ class SessionManager: NSObject, ObservableObject {
         
         let ensemble = EnsembleReading(
             id: clientSessionId,
-            serverId: -1,
+            serverId: nil,
             ensembleType: ensembleType,
             temperature: temperature,
             waterStatus: waterStatus,
@@ -231,7 +231,7 @@ class SessionManager: NSObject, ObservableObject {
         
         let session = SessionData(
             id: clientSessionId,
-            serverId: -1,
+            serverId: nil,
             startedAt: startTime,
             endedAt: endTime,
             duration: elapsedTime, // calculated throughout session
@@ -298,6 +298,43 @@ class SessionManager: NSObject, ObservableObject {
     }
     
     // MARK: - Syncing between local and server
+    func uploadPendingSessions() async {
+        for index in savedSessions.indices {
+            // Skip already-uploaded sessions
+            guard savedSessions[index].serverId == nil else {
+                continue
+            }
+
+            do {
+                // Upload current local session
+                let serverID = try await serverManager.postSession(
+                    savedSessions[index]
+                )
+                // Update local session with ID returned by server
+                savedSessions[index].serverId = serverID
+
+            } catch {
+                print("Failed to upload session \(savedSessions[index].id): \(error)")
+            }
+        }
+
+        saveSessionsToDisk()
+    }
+    
+    func uploadToServer(_ session: SessionData) async -> SessionData? {
+        do {
+            let sessionID = try await serverManager.postSession(session)
+            
+            var updatedSession = session
+            updatedSession.serverId = sessionID
+
+            return updatedSession
+        } catch {
+            print(error)
+            return nil
+        }
+    }
+    
     func merge(_ remoteSessions: [SessionData]) {
         var merged = savedSessions
         
@@ -356,7 +393,7 @@ extension SessionManager: CLLocationManagerDelegate {
 // MARK: - Data Models for Server Upload
 struct EnsembleReading: Codable {
     let id: UUID
-    let serverId: Int // -1 if not uploaded to server (or haven't received a response)
+    let serverId: Int? // nil if not uploaded to server (or haven't received a response)
     let ensembleType: String
     let temperature: Double
     let waterStatus: String

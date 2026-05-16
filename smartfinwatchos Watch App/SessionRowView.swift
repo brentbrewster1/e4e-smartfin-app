@@ -55,7 +55,7 @@ struct SessionRowView: View {
     SessionRowView(
         session: SessionData(
             id: UUID(),
-            serverId: -1,
+            serverId: nil,
             startedAt: Date(),
             endedAt: Date(),
             duration: 3600,

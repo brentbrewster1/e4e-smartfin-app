@@ -28,6 +28,41 @@ class ServerManager: ObservableObject {
 
         return serverSessions.map { $0.toSessionData() }
     }
+    
+    func postSession(_ session: SessionData) async throws -> Int {
+        guard let url = URL(string: SERVER_BASE_URL + "/sessions/create") else {
+            throw URLError(.badURL)
+        }
+
+        // Prepare data to send
+        let serverSession = session.toServerSession()
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let jsonData = try encoder.encode(serverSession)
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              200...299 ~= httpResponse.statusCode else {
+            throw URLError(.badServerResponse)
+        }
+
+
+        let decoder = JSONDecoder()
+        let createResponse = try decoder.decode(
+            CreateSessionResponse.self,
+            from: data
+        )
+
+        // Return server ID for uploaded session
+        return createResponse.id
+    }
 }
 
 struct ServerSession: Codable {
@@ -64,4 +99,10 @@ extension ServerSession {
             deviceName: deviceName
         )
     }
+}
+
+// Reponse models
+struct CreateSessionResponse: Codable {
+    let status: String
+    let id: Int
 }

@@ -59,7 +59,7 @@ struct SessionHistoryView: View {
     SessionHistoryView(
         sessions: [SessionData(
             id: UUID(),
-            serverId: -1,
+            serverId: nil,
             startedAt: Date(),
             endedAt: Date(),
             duration: 3600,
@@ -69,7 +69,7 @@ struct SessionHistoryView: View {
         ),
        SessionData(
            id: UUID(),
-           serverId: -1,
+           serverId: nil,
            startedAt: Date(),
            endedAt: Date(),
            duration: 3600,
