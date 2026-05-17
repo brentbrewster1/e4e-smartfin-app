@@ -6,15 +6,15 @@
 
 import Foundation
 
-class NetworkManager {
-    // This allows calling of NetworkManager.shared
-    static let shared = NetworkManager()
+class BluetoothNetworkManager {
+    // This allows calling of BluetoothNetworkManager.shared
+    static let shared = BluetoothNetworkManager()
     
     private init() {} // This prevents creating extra instances by mistake
     
     func uploadBluetoothData(value: String, deviceID: String) {
         // REPLACE WITH SERVER URL
-        guard let url = URL(string: "https://your-server.com/api/ingest") else { return }
+        guard let url = URL(string: "https://[server domain].com/api/ingest") else { return }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"

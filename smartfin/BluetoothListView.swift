@@ -18,23 +18,49 @@ struct BluetoothListView: View {
         NavigationView {
             List {
                 Section(header: Text("Smartfin Devices Found")) {
-                    if bleManager.discoveredPeripherals.isEmpty {
-                        Text("Scanning...")
-                            .foregroundColor(.gray)
-                            .italic()
+                    // If we're running against the mock in Simulator, show the
+                    // simulated peripheral list and allow connecting to them.
+                    if let mock = bleManager as? MockBluetoothManager {
+                        if mock.simulatedPeripherals.isEmpty {
+                            Text("Scanning...")
+                                .foregroundColor(.gray)
+                                .italic()
+                        } else {
+                            ForEach(mock.simulatedPeripherals) { peripheral in
+                                Button(action: {
+                                    mock.connectToSimulatedPeripheral(peripheral.id)
+                                    presentationMode.wrappedValue.dismiss()
+                                }) {
+                                    HStack {
+                                        Text(peripheral.name)
+                                            .fontWeight(.bold)
+                                        Spacer()
+                                        Text("Connect")
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                        }
                     } else {
-                        ForEach(bleManager.discoveredPeripherals, id: \.identifier) { peripheral in
-                            Button(action: {
-                                // Connect when tapped
-                                bleManager.connect(to: peripheral)
-                                presentationMode.wrappedValue.dismiss()
-                            }) {
-                                HStack {
-                                    Text(peripheral.name ?? "Unknown Device")
-                                        .fontWeight(.bold)
-                                    Spacer()
-                                    Text("Connect")
-                                        .foregroundColor(.blue)
+                        // Real device path — show discovered CBPeripherals
+                        if bleManager.discoveredPeripherals.isEmpty {
+                            Text("Scanning...")
+                                .foregroundColor(.gray)
+                                .italic()
+                        } else {
+                            ForEach(bleManager.discoveredPeripherals, id: \.identifier) { peripheral in
+                                Button(action: {
+                                    // Connect when tapped
+                                    bleManager.connect(to: peripheral)
+                                    presentationMode.wrappedValue.dismiss()
+                                }) {
+                                    HStack {
+                                        Text(peripheral.name ?? "Unknown Device")
+                                            .fontWeight(.bold)
+                                        Spacer()
+                                        Text("Connect")
+                                            .foregroundColor(.blue)
+                                    }
                                 }
                             }
                         }
