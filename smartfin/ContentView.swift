@@ -1,85 +1,24 @@
+//
+//  ContentView.swift
+//  smartfin
+//
+
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject var bleManager = BluetoothManager()
-    @State private var showBluetoothMenu = false
+    @ObservedObject var bluetoothManager: BluetoothManager
+
+    init(bluetoothManager: BluetoothManager) {
+        _bluetoothManager = ObservedObject(wrappedValue: bluetoothManager)
+    }
 
     var body: some View {
-        VStack(spacing: 20) {
-
-            // --- LOGO ---
-            Image("SmartfinLogo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 250)
-                .padding(.top, 40)
-
-            // --- CONNECTION STATUS ---
-            Text(bleManager.connectionStatus)
-                .font(.headline)
-                .foregroundColor(bleManager.connectionStatus.contains("Connected to") ? .green : .gray)
-
-            // --- DATA LOG WINDOW ---
-            VStack(alignment: .leading, spacing: 5) {
-                Text("LIVE DATA STREAM")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(.gray)
-                    .padding(.horizontal)
-
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if bleManager.dataLog.isEmpty {
-                                Text("Waiting for data...")
-                                    .font(.system(.caption, design: .monospaced))
-                                    .foregroundColor(.gray)
-                            } else {
-                                ForEach(Array(bleManager.dataLog.enumerated()), id: \.offset) { index, message in
-                                    Text(message)
-                                        .font(.system(.caption, design: .monospaced))
-                                        .foregroundColor(.green)
-                                        .id(index)
-                                }
-                            }
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(height: 250)
-                    .background(Color.black.opacity(0.85))
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-                    .onChange(of: bleManager.dataLog.count) { _ in
-                        withAnimation {
-                            proxy.scrollTo(bleManager.dataLog.count - 1, anchor: .bottom)
-                        }
-                    }
-                }
-            }
-
-            Spacer()
-
-            // --- CONNECT BUTTON ---
-            Button(action: {
-                showBluetoothMenu = true
-            }) {
-                HStack {
-                    Image(systemName: "wifi")
-                    Text("Find Smartfin Device")
-                }
-                .font(.headline)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 20)
-            .sheet(isPresented: $showBluetoothMenu) {
-                BluetoothListView(bleManager: bleManager)
-            }
+        NavigationStack {
+            SessionFlowView(bluetoothManager: bluetoothManager)
         }
     }
+}
+
+#Preview {
+    ContentView(bluetoothManager: BluetoothManager())
 }

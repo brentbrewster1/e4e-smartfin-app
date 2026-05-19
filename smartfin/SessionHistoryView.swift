@@ -2,8 +2,6 @@
 //  SessionHistoryView.swift
 //  smartfin
 //
-//  Created by Uliyaah Dionisio on 4/24/26.
-//
 
 import SwiftUI
 
@@ -53,27 +51,4 @@ struct SessionHistoryView: View {
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
         }
     }
-}
-
-#Preview {
-    SessionHistoryView(
-        sessions: [SessionData(
-            id: UUID(),
-            date: Date(),
-            duration: 3600,
-            samplesCollected: 150,
-            averageTemp: 72.5,
-            deviceName: "Smart Fin"
-        ),
-       SessionData(
-           id: UUID(),
-           date: Date(),
-           duration: 3600,
-           samplesCollected: 150,
-           averageTemp: 72.5,
-           deviceName: "Smart Fin"
-       ),
-        ],
-        onNewSession: {}
-    )
 }

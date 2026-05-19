@@ -2,8 +2,6 @@
 //  SessionCompleteView.swift
 //  smartfin
 //
-//  Created by Uliyaah Dionisio on 4/24/26.
-//
 
 import SwiftUI
 
@@ -17,7 +15,6 @@ struct SessionCompleteView: View {
                 .font(.headline)
                 .foregroundColor(.yellow)
 
-            // Session Stats (compact)
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Duration")
@@ -63,11 +60,4 @@ struct SessionCompleteView: View {
         }
         .padding()
     }
-}
-
-#Preview {
-    SessionCompleteView(
-        sessionManager: SessionManager(),
-        onSave: {}
-    )
 }

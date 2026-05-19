@@ -76,17 +76,27 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				SessionManager.swift,
 			);
 			target = E94552802F2361C90013CD80 /* smartfin */;
 		};
 		E9C657B42F3A9F7C00F881CA /* Exceptions for "smartfin" folder in "smartfinwatchos Watch App" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				ActiveSessionView.swift,
 				BluetoothManager.swift,
+				DetailRow.swift,
+				FinConnectionViews.swift,
 				NetworkManager.swift,
+				ReadyView.swift,
+				SessionCompleteView.swift,
+				SessionData.swift,
+				SessionDetailView.swift,
+				SessionFlowView.swift,
+				SessionHistoryView.swift,
 				SessionManager.swift,
 				SessionReadingRecord.swift,
+				SessionRowView.swift,
+				SessionState.swift,
 			);
 			target = E9C657872F3A9B1600F881CA /* smartfinwatchos Watch App */;
 		};
@@ -693,6 +703,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = smartfin/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Please allow Smartfin to connect via Bluetooth for data transmission.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SmartFin uses your location to tag surf session readings with GPS.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -727,6 +738,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = smartfin/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Please allow Smartfin to connect via Bluetooth for data transmission.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SmartFin uses your location to tag surf session readings with GPS.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

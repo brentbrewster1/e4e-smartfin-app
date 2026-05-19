@@ -2,16 +2,20 @@
 //  smartfinApp.swift
 //  smartfin
 //
-//  Created by Brent Brewster on 1/22/26.
-//
 
 import SwiftUI
 
+private final class AppBluetoothLaunchBox: ObservableObject {
+    let manager = BluetoothManager()
+}
+
 @main
 struct smartfinApp: App {
+    @StateObject private var bluetoothLaunch = AppBluetoothLaunchBox()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(bluetoothManager: bluetoothLaunch.manager)
         }
     }
 }

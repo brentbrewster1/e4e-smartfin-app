@@ -2,14 +2,12 @@
 //  SessionRowView.swift
 //  smartfin
 //
-//  Created by Uliyaah Dionisio on 4/24/26.
-//
 
 import SwiftUI
 
 struct SessionRowView: View {
     let session: SessionData
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -21,7 +19,7 @@ struct SessionRowView: View {
                     .font(.caption2)
                     .foregroundColor(.gray)
             }
-            
+
             HStack(spacing: 8) {
                 Text(session.formattedTime)
                     .font(.headline)
@@ -33,7 +31,6 @@ struct SessionRowView: View {
                 Spacer(minLength: 8)
 
                 HStack(spacing: 4) {
-                    // Graph-style SF Symbol to represent data/packages collected
                     Image(systemName: "archivebox.fill")
                         .font(.caption)
                         .foregroundColor(.gray)
@@ -49,17 +46,4 @@ struct SessionRowView: View {
         }
         .padding(.vertical, 4).padding(.horizontal, 6)
     }
-}
-
-#Preview {
-    SessionRowView(
-        session: SessionData(
-            id: UUID(),
-            date: Date(),
-            duration: 3600,
-            samplesCollected: 150,
-            averageTemp: 72.5,
-            deviceName: "Smart Fin"
-        )
-    )
 }

@@ -2,8 +2,6 @@
 //  SessionDetailView.swift
 //  smartfin
 //
-//  Created by Uliyaah Dionisio on 4/24/26.
-//
 
 import SwiftUI
 
@@ -138,17 +136,4 @@ private struct SessionReadingRowView: View {
         let extra = v.count > prefix.count ? " … (\(v.count) values)" : ""
         return "IMU: " + parts.joined(separator: ", ") + extra
     }
-}
-
-#Preview {
-    SessionDetailView(
-        session: SessionData(
-            id: UUID(),
-            date: Date(),
-            duration: 3600,
-            samplesCollected: 150,
-            averageTemp: 72.5,
-            deviceName: "Smart Fin"
-        )
-    )
 }

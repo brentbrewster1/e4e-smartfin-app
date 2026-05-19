@@ -2,12 +2,12 @@
 //  SessionFlowView.swift
 //  smartfin
 //
-//  Created by Uliyaah Dionisio on 4/24/26.
-//
 
 import SwiftUI
 import CoreBluetooth
+#if os(watchOS)
 import WatchKit
+#endif
 
 struct SessionFlowView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
@@ -28,7 +28,7 @@ struct SessionFlowView: View {
                         sessionManager.prepareSession(deviceName: bluetoothManager.connectedDevice?.name ?? "SmartFin")
                         sessionState = .active
                         sessionManager.startSession()
-                        WKInterfaceDevice.current().enableWaterLock()
+                        enableWaterLockIfWatch()
                     } else {
                         sessionState = .selectFin
                     }
@@ -54,6 +54,7 @@ struct SessionFlowView: View {
             case .active:
                 ActiveSessionView(
                     sessionManager: sessionManager,
+                    bluetoothManager: bluetoothManager,
                     onEnd: {
                         sessionState = .complete
                         sessionManager.endSession()
@@ -92,16 +93,14 @@ struct SessionFlowView: View {
                 sessionManager.prepareSession(deviceName: bluetoothManager.connectedDevice?.name ?? "SmartFin")
                 sessionState = .active
                 sessionManager.startSession()
-                #if os(watchOS)
-                WKInterfaceDevice.current().enableWaterLock()
-                #endif
+                enableWaterLockIfWatch()
             }
         }
     }
-}
 
-#Preview {
-    NavigationStack {
-        SessionFlowView(bluetoothManager: BluetoothManager(), sessionManager: SessionManager())
+    private func enableWaterLockIfWatch() {
+        #if os(watchOS)
+        WKInterfaceDevice.current().enableWaterLock()
+        #endif
     }
 }

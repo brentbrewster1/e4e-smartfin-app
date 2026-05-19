@@ -1,6 +1,6 @@
 //
 //  FinConnectionViews.swift
-//  smartfinwatchos Watch App
+//  smartfin
 //
 
 import CoreBluetooth
@@ -30,9 +30,13 @@ struct ConnectionView: View {
             }
         }
         .onAppear {
-            if bluetoothManager.centralManager?.state == .poweredOn {
-                bluetoothManager.startScanning()
-            }
+            bluetoothManager.startScanning()
+        }
+        .onChange(of: bluetoothManager.discoveredPeripherals.count) { count in
+            guard count == 1,
+                  !bluetoothManager.isConnected,
+                  let device = bluetoothManager.discoveredPeripherals.first else { return }
+            bluetoothManager.connect(to: device)
         }
     }
 }

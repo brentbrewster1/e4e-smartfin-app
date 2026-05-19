@@ -2,30 +2,27 @@
 //  ReadyView.swift
 //  smartfin
 //
-//  Created by Uliyaah Dionisio on 4/24/26.
-//
 
 import SwiftUI
 
 struct ReadyView: View {
     let onStart: () -> Void
-    
+
     var body: some View {
         VStack(spacing: 12) {
             Spacer()
-            
-            // SmartFin icon
+
             Image(systemName: "water.waves")
                 .font(.system(size: 60))
                 .foregroundColor(.blue)
-            
+
             Text("Ready to start")
                 .font(.headline)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.white)
-            
+
             Spacer()
-            
+
             Button(action: onStart) {
                 Text("Start Session")
                     .font(.headline)
@@ -37,8 +34,4 @@ struct ReadyView: View {
         }
         .padding()
     }
-}
-
-#Preview {
-    ReadyView(onStart: {})
 }
