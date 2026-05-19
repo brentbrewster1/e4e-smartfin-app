@@ -1,3 +1,9 @@
+//  BluetoothManager.swift
+//  smartfin
+//
+//  This file manages Bluetooth connectivity, including scanning for devices, connecting, and handling data transfer.
+//
+
 import Foundation
 import CoreBluetooth
 import Combine

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var syncDataManager: SyncDataManager
+
     // Use a lightweight simulator mock when running in Simulator so the UI can be
     // exercised without requiring real Bluetooth hardware. On a device the
     // real `BluetoothManager` will be used.
@@ -69,6 +71,44 @@ struct ContentView: View {
             }
             
             Spacer()
+
+#if DEBUG && targetEnvironment(simulator)
+            VStack(spacing: 10) {
+                Button(action: {
+                    syncDataManager.sendDebugMockBatchToServer()
+                }) {
+                    HStack {
+                        Image(systemName: "paperplane.fill")
+                        Text("Send Mock Batch to Server")
+                    }
+                    .font(.subheadline)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+
+                if let batchId = syncDataManager.lastDebugBatchId {
+                    Text("Last debug batch: \(batchId.uuidString.prefix(8))")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                }
+
+                if let receivedBatch = syncDataManager.lastReceivedBatchId {
+                    Text("Last received batch: \(receivedBatch.uuidString.prefix(8))")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                }
+
+                if let error = syncDataManager.lastSyncError {
+                    Text("Sync error: \(error)")
+                        .font(.caption2)
+                        .foregroundColor(.red)
+                }
+            }
+            .padding(.horizontal)
+#endif
             
             // --- CONNECT BUTTON ---
             Button(action: {

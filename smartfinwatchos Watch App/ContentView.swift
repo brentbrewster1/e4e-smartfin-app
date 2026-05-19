@@ -10,10 +10,19 @@ import CoreBluetooth
 
 struct ContentView: View {
     @StateObject var bluetoothManager: BluetoothManager
-    @State private var showSessionFlow = false
+    @ObservedObject var sessionManager: SessionManager
+    @ObservedObject var watchSyncManager: WatchSyncDataManager
 
-    init(bluetoothManager: BluetoothManager = BluetoothManager()) {
+    init(
+        bluetoothManager: BluetoothManager = BluetoothManager(),
+        sessionManager: SessionManager = SessionManager(),
+        watchSyncManager: WatchSyncDataManager? = nil
+    ) {
         _bluetoothManager = StateObject(wrappedValue: bluetoothManager)
+        _sessionManager = ObservedObject(wrappedValue: sessionManager)
+        _watchSyncManager = ObservedObject(
+            wrappedValue: watchSyncManager ?? WatchSyncDataManager(sessionManager: sessionManager)
+        )
     }
     
     var body: some View {
@@ -22,7 +31,11 @@ struct ContentView: View {
                 if bluetoothManager.isConnected {
                     // Once connected, show the session flow using the same
                     // bluetooth manager instance so connection state propagates.
-                    SessionFlowView(bluetoothManager: bluetoothManager)
+                    SessionFlowView(
+                        bluetoothManager: bluetoothManager,
+                        sessionManager: sessionManager,
+                        watchSyncManager: watchSyncManager
+                    )
                 } else {
                     // Show connection interface
                     ConnectionView(bluetoothManager: bluetoothManager)
@@ -228,5 +241,10 @@ struct MultipleDevicesView: View {
 }
 
 #Preview {
-    ContentView(bluetoothManager: MockBluetoothManager())
+    let sessionManager = SessionManager()
+    ContentView(
+        bluetoothManager: MockBluetoothManager(),
+        sessionManager: sessionManager,
+        watchSyncManager: WatchSyncDataManager(sessionManager: sessionManager)
+    )
 }

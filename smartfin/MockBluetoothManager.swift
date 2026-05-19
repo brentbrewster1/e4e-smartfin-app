@@ -3,8 +3,6 @@ import Combine
 
 /// A very small simulator-only mock that subclasses `BluetoothManager` and
 /// publishes synthetic readings so the UI can be exercised in the Simulator.
-///
-/// Add this file to the app target. The project will still use the real
 /// `BluetoothManager` on device builds because we instantiate the mock only
 /// when `targetEnvironment(simulator)` is true.
 class MockBluetoothManager: BluetoothManager {

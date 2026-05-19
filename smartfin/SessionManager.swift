@@ -2,13 +2,17 @@
 //  SessionManager.swift
 //  smartfin
 //
-//  Created by Uliyaah Dionisio on 4/25/26.
+//  This file manages session-related logic, including data handling, transfer batch creation, and server upload triggers. It also contains extensions for converting session data for various use cases.
 //
-
 
 import Foundation
 import Combine
 import CoreLocation
+
+private enum SessionStorageKey {
+    static let savedSessions = "savedSessions"
+    static let savedEnsembles = "savedEnsembles"
+}
 
 // MARK: - Session Manager
 class SessionManager: NSObject, ObservableObject {
@@ -59,6 +63,7 @@ class SessionManager: NSObject, ObservableObject {
         }
 
         loadSavedSessions()
+        loadSavedEnsembles()
     }
 
     // MARK: - Bluetooth Binding
@@ -67,7 +72,6 @@ class SessionManager: NSObject, ObservableObject {
         bluetoothManager = manager
 
         // Subscribe to temperature + waterStatus from the Bluetooth manager.
-        // Simpler: we don't assume Ensemble IDs here — frontend only needs temp + water state.
         manager.$currentTemperature
             .combineLatest(manager.$waterStatus)
             .sink { [weak self] temp, water in
@@ -171,6 +175,7 @@ class SessionManager: NSObject, ObservableObject {
         currentTemperature = 67.0 + tempVariation
 
         let ensemble = EnsembleReading(
+            ensembleClientId: UUID(),
             id: clientSessionId,
             serverId: nil,
             ensembleType: "01",
@@ -203,6 +208,7 @@ class SessionManager: NSObject, ObservableObject {
         }
         
         let ensemble = EnsembleReading(
+            ensembleClientId: UUID(),
             id: clientSessionId,
             serverId: nil,
             ensembleType: ensembleType,
@@ -247,9 +253,10 @@ class SessionManager: NSObject, ObservableObject {
     
     // MARK: - Ensemble Saving
     func saveEnsembleLocal() {
-        // edge case -- could potentially add duplicates, such as on crash
         for ensemble in ensemblesInCurrentSession {
-            savedEnsembles.append(ensemble)
+            if !savedEnsembles.contains(where: { $0.ensembleClientId == ensemble.ensembleClientId }) {
+                savedEnsembles.append(ensemble)
+            }
         }
         
         saveEnsemblesToDisk()
@@ -275,26 +282,106 @@ class SessionManager: NSObject, ObservableObject {
     // MARK: - Persistence
     private func saveSessionsToDisk() {
         if let encoded = try? JSONEncoder().encode(savedSessions) {
-            UserDefaults.standard.set(encoded, forKey: "savedSessions")
+            UserDefaults.standard.set(encoded, forKey: SessionStorageKey.savedSessions)
         }
     }
     
     private func saveEnsemblesToDisk() {
         if let encoded = try? JSONEncoder().encode(savedEnsembles) {
-            UserDefaults.standard.set(encoded, forKey: "savedEnsembles")
+            UserDefaults.standard.set(encoded, forKey: SessionStorageKey.savedEnsembles)
         }
     }
     
     private func loadSavedSessions() {
-        if let data = UserDefaults.standard.data(forKey: "savedSessions"),
+        if let data = UserDefaults.standard.data(forKey: SessionStorageKey.savedSessions),
            let decoded = try? JSONDecoder().decode([SessionData].self, from: data) {
             savedSessions = decoded
         }
     }
+
+    private func loadSavedEnsembles() {
+        if let data = UserDefaults.standard.data(forKey: SessionStorageKey.savedEnsembles),
+           let decoded = try? JSONDecoder().decode([EnsembleReading].self, from: data) {
+            savedEnsembles = decoded
+        }
+    }
     
     private func clearSavedData() {
-        UserDefaults.standard.removeObject(forKey: "savedSessions")
-        UserDefaults.standard.removeObject(forKey: "savedEnsembles")
+        UserDefaults.standard.removeObject(forKey: SessionStorageKey.savedSessions)
+        UserDefaults.standard.removeObject(forKey: SessionStorageKey.savedEnsembles)
+    }
+
+    func makeTransferBatch(
+        watchInstallId: UUID,
+        batchId: UUID = UUID(),
+        createdAt: Date = Date(),
+        sourcePlatform: String = "watchos"
+    ) -> WatchTransferBatch? {
+        let sessions = savedSessions.map { session in
+            session.toTransferSession(
+                ensembles: savedEnsembles.filter { $0.id == session.id }
+            )
+        }
+
+        guard !sessions.isEmpty else {
+            return nil
+        }
+
+        return WatchTransferBatch(
+            schemaVersion: 1,
+            sourcePlatform: sourcePlatform,
+            watchInstallId: watchInstallId,
+            batchId: batchId,
+            createdAt: createdAt,
+            sessions: sessions
+        )
+    }
+
+    func mergeTransferredBatch(_ batch: WatchTransferBatch) {
+        mergeTransferredSessions(batch.sessions)
+
+        let ensembles = batch.sessions.flatMap(\ .ensembles)
+        mergeTransferredEnsembles(ensembles)
+    }
+
+    func mergeTransferredSessions(_ sessions: [WatchTransferSession]) {
+        guard !sessions.isEmpty else { return }
+
+        var merged = savedSessions
+
+        for session in sessions {
+            let incoming = session.toSessionData()
+            if let existingIndex = merged.firstIndex(where: { $0.id == incoming.id }) {
+                let preservedServerId = merged[existingIndex].serverId
+                merged[existingIndex] = incoming
+                merged[existingIndex].serverId = preservedServerId
+            } else {
+                merged.append(incoming)
+            }
+        }
+
+        savedSessions = merged
+        saveSessionsToDisk()
+    }
+
+    func mergeTransferredEnsembles(_ ensembles: [WatchTransferEnsemble]) {
+        guard !ensembles.isEmpty else { return }
+
+        var merged = savedEnsembles
+
+        for ensemble in ensembles {
+            let incoming = ensemble.toEnsembleReading()
+            if let existingIndex = merged.firstIndex(where: { $0.ensembleClientId == incoming.ensembleClientId }) {
+                let preservedServerId = merged[existingIndex].serverId
+                merged[existingIndex] = incoming
+                merged[existingIndex].serverId = preservedServerId
+            } else {
+                merged.append(incoming)
+            }
+        }
+
+        savedEnsembles = merged
+        saveEnsemblesToDisk()
     }
     
     // MARK: - Syncing between local and server
@@ -443,6 +530,7 @@ extension SessionManager: CLLocationManagerDelegate {
 
 // MARK: - Data Models for Server Upload
 struct EnsembleReading: Codable {
+    let ensembleClientId: UUID
     let id: UUID
     var serverId: Int? // nil if not uploaded to server (or haven't received a response)
     let ensembleType: String
@@ -453,6 +541,7 @@ struct EnsembleReading: Codable {
     let timestamp: Date
 
     enum CodingKeys: String, CodingKey {
+        case ensembleClientId = "ensemble_client_id"
         case id = "client_session_id"
         case serverId = "id"
         case ensembleType = "ensemble_type"
@@ -461,5 +550,74 @@ struct EnsembleReading: Codable {
         case geoCoordinates = "geo_coordinates"
         case imuData = "imu_data"
         case timestamp
+    }
+
+    init(
+        ensembleClientId: UUID,
+        id: UUID,
+        serverId: Int?,
+        ensembleType: String,
+        temperature: Double,
+        waterStatus: String,
+        geoCoordinates: String?,
+        imuData: Data?,
+        timestamp: Date
+    ) {
+        self.ensembleClientId = ensembleClientId
+        self.id = id
+        self.serverId = serverId
+        self.ensembleType = ensembleType
+        self.temperature = temperature
+        self.waterStatus = waterStatus
+        self.geoCoordinates = geoCoordinates
+        self.imuData = imuData
+        self.timestamp = timestamp
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        ensembleClientId = try container.decodeIfPresent(UUID.self, forKey: .ensembleClientId) ?? UUID()
+        id = try container.decode(UUID.self, forKey: .id)
+        serverId = try container.decodeIfPresent(Int.self, forKey: .serverId)
+        ensembleType = try container.decode(String.self, forKey: .ensembleType)
+        temperature = try container.decode(Double.self, forKey: .temperature)
+        waterStatus = try container.decode(String.self, forKey: .waterStatus)
+        geoCoordinates = try container.decodeIfPresent(String.self, forKey: .geoCoordinates)
+        imuData = try container.decodeIfPresent(Data.self, forKey: .imuData)
+        timestamp = try container.decode(Date.self, forKey: .timestamp)
+    }
+}
+
+extension SessionData {
+    func toTransferSession(
+        ensembles: [EnsembleReading],
+        transferStatus: TransferStatus = .pending
+    ) -> WatchTransferSession {
+        WatchTransferSession(
+            clientSessionId: id,
+            deviceName: deviceName,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            duration: duration,
+            samplesCollected: samplesCollected,
+            averageTemp: averageTemp,
+            transferStatus: transferStatus,
+            ensembles: ensembles.map { $0.toTransferEnsemble() }
+        )
+    }
+}
+
+extension EnsembleReading {
+    func toTransferEnsemble() -> WatchTransferEnsemble {
+        WatchTransferEnsemble(
+            ensembleClientId: ensembleClientId,
+            clientSessionId: id,
+            ensembleType: ensembleType,
+            temperature: temperature,
+            waterStatus: waterStatus,
+            geoCoordinates: geoCoordinates,
+            imuDataBase64: imuData?.base64EncodedString(),
+            timestamp: timestamp
+        )
     }
 }
