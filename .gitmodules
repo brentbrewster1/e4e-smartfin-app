@@ -1,0 +1,6 @@
+[submodule "smartfin/external"]
+	path = smartfin/external
+	url = git@github.com:charliekush/smartfin-ble-client.git
+[submodule "external"]
+	path = external
+	url = git@github.com:charliekush/smartfin-ble-client.git
