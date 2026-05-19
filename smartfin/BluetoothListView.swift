@@ -4,8 +4,7 @@
 //
 //  Created by Brent Brewster on 1/28/26.
 //
-
-// NOTE: This scans for bluetooth devices & ONLY includes ones that include "Smartfin", "Argon", "Boron", or "Photon" in the name
+// NOTE: This scans for bluetooth devices & ONLY includes ones that include "Smartfin" or "SmartFin" in the name
 
 import SwiftUI
 import CoreBluetooth

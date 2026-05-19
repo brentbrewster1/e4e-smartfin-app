@@ -99,7 +99,7 @@ struct SessionFlowView: View {
             sessionManager.bindBluetoothManager(bluetoothManager)
             watchSyncManager.flushPendingToPhone()
         }
-        .onChange(of: bluetoothManager.isConnected) { connected in
+        .onChange(of: bluetoothManager.isConnected) { _, connected in
             // If we were waiting for a connection and the manager reports
             // connected, move into the active session state.
             if connected && sessionState == .connecting {
