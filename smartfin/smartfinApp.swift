@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct smartfinApp: App {
+    @StateObject private var syncDataManager = SyncDataManager()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -26,6 +28,7 @@ struct smartfinApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(syncDataManager)
         }
         .modelContainer(sharedModelContainer)
     }

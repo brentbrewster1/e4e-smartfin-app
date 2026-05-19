@@ -9,6 +9,15 @@ import SwiftUI
 
 @main
 struct smartfinwatchos_Watch_AppApp: App {
+    @StateObject private var sessionManager: SessionManager
+    @StateObject private var watchSyncManager: WatchSyncDataManager
+
+    init() {
+        let manager = SessionManager()
+        _sessionManager = StateObject(wrappedValue: manager)
+        _watchSyncManager = StateObject(wrappedValue: WatchSyncDataManager(sessionManager: manager))
+    }
+
     // Create a Bluetooth manager appropriate for the environment: use the
     // simulator mock when running in the watch simulator, otherwise use the
     // real manager on device.
@@ -22,7 +31,11 @@ struct smartfinwatchos_Watch_AppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(bluetoothManager: bluetoothManager)
+            ContentView(
+                bluetoothManager: bluetoothManager,
+                sessionManager: sessionManager,
+                watchSyncManager: watchSyncManager
+            )
         }
     }
 }

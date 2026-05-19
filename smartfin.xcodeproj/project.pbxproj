@@ -58,6 +58,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CB1C4B132FBAA834006647F9 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		FD7609352FB7C776002CD6DD /* smartfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = smartfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD7609362FB7C776002CD6DD /* smartfinwatchos Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "smartfinwatchos Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD7609372FB7C776002CD6DD /* smartfinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = smartfinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -71,8 +72,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				ServerManager.swift,
-				SessionManager.swift,
 			);
 			target = E94552802F2361C90013CD80 /* smartfin */;
 		};
@@ -83,6 +82,7 @@
 				NetworkManager.swift,
 				ServerManager.swift,
 				SessionManager.swift,
+				TransferModels.swift,
 			);
 			target = E9C657872F3A9B1600F881CA /* smartfinwatchos Watch App */;
 		};
@@ -174,6 +174,7 @@
 		E94552782F2361C90013CD80 = {
 			isa = PBXGroup;
 			children = (
+				CB1C4B132FBAA834006647F9 /* README.md */,
 				E94552832F2361C90013CD80 /* smartfin */,
 				E94552932F2361CB0013CD80 /* smartfinTests */,
 				E945529D2F2361CB0013CD80 /* smartfinUITests */,
@@ -340,7 +341,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					E94552802F2361C90013CD80 = {
 						CreatedOnToolsVersion = 26.2;
@@ -438,6 +439,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		CBE1F2E72FA3025A0047732F /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -455,6 +457,7 @@
 		};
 		CBE1F2E82FA304540047732F /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);

@@ -11,12 +11,20 @@ import CoreLocation
 
 struct SessionFlowView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
-    @StateObject var sessionManager: SessionManager
+    @ObservedObject var sessionManager: SessionManager
+    @ObservedObject var watchSyncManager: WatchSyncDataManager
     @State private var sessionState: SessionState = .ready
 
-    init(bluetoothManager: BluetoothManager = BluetoothManager(), sessionManager: SessionManager = SessionManager()) {
+    init(
+        bluetoothManager: BluetoothManager = BluetoothManager(),
+        sessionManager: SessionManager = SessionManager(),
+        watchSyncManager: WatchSyncDataManager? = nil
+    ) {
         _bluetoothManager = ObservedObject(wrappedValue: bluetoothManager)
-        _sessionManager = StateObject(wrappedValue: sessionManager)
+        _sessionManager = ObservedObject(wrappedValue: sessionManager)
+        _watchSyncManager = ObservedObject(
+            wrappedValue: watchSyncManager ?? WatchSyncDataManager(sessionManager: sessionManager)
+        )
     }
     
     var body: some View {
@@ -60,6 +68,7 @@ struct SessionFlowView: View {
                     onEnd: {
                         sessionState = .complete
                         sessionManager.endSession()
+                        watchSyncManager.flushPendingToPhone()
                     }
                 )
 
@@ -68,7 +77,7 @@ struct SessionFlowView: View {
                     sessionManager: sessionManager,
                     onSave: {
                         Task {
-                            //sessionManager.saveSessionLocal()
+                            watchSyncManager.flushPendingToPhone()
                             sessionState = .history
                         }
                     }
@@ -82,9 +91,13 @@ struct SessionFlowView: View {
                         sessionManager.reset()
                     }
                 ).task {
-                    await sessionManager.syncData()
+                    watchSyncManager.flushPendingToPhone()
                 }
             }
+        }
+        .onAppear {
+            sessionManager.bindBluetoothManager(bluetoothManager)
+            watchSyncManager.flushPendingToPhone()
         }
         .onChange(of: bluetoothManager.isConnected) { connected in
             // If we were waiting for a connection and the manager reports
@@ -93,12 +106,21 @@ struct SessionFlowView: View {
                 sessionState = .active
                 sessionManager.startSession()
             }
+
+            if connected {
+                watchSyncManager.flushPendingToPhone()
+            }
         }
     }
 }
 
 #Preview {
     NavigationStack {
-        SessionFlowView(bluetoothManager: MockBluetoothManager(), sessionManager: SessionManager())
+        let sessionManager = SessionManager()
+        SessionFlowView(
+            bluetoothManager: MockBluetoothManager(),
+            sessionManager: sessionManager,
+            watchSyncManager: WatchSyncDataManager(sessionManager: sessionManager)
+        )
     }
 }
