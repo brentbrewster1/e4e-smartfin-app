@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var showBluetoothMenu = false
 
     var body: some View {
+        NavigationStack {
         VStack(spacing: 20) {
             
             // --- LOGO ---
@@ -126,10 +127,28 @@ struct ContentView: View {
                 .cornerRadius(12)
             }
             .padding(.horizontal)
+            
+            NavigationLink {
+                VisualizationView()
+            } label: {
+                HStack {
+                    Image(systemName: "chart.xyaxis.line")
+                    Text("View Past Sessions Summary")
+                }
+                .font(.headline)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.teal)
+                .foregroundColor(.white)
+                .cornerRadius(12)
+            }
+            .padding(.horizontal)
             .padding(.bottom, 20)
             .sheet(isPresented: $showBluetoothMenu) {
                 BluetoothListView(bleManager: bleManager)
             }
+        }
+        .navigationTitle("Smartfin")
         }
     }
 }

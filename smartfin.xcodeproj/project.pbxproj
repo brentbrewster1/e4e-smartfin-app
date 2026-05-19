@@ -59,6 +59,7 @@
 
 /* Begin PBXFileReference section */
 		CB1C4B132FBAA834006647F9 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		CBF818922FBD0A88005F8A30 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		FD7609352FB7C776002CD6DD /* smartfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = smartfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD7609362FB7C776002CD6DD /* smartfinwatchos Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "smartfinwatchos Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD7609372FB7C776002CD6DD /* smartfinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = smartfinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -182,6 +183,7 @@
 				E9C657972F3A9B1800F881CA /* smartfinwatchos Watch AppTests */,
 				E9C657A12F3A9B1800F881CA /* smartfinwatchos Watch AppUITests */,
 				FD7609352FB7C776002CD6DD /* smartfin.app */,
+				CBF818922FBD0A88005F8A30 /* .gitignore */,
 				FD7609362FB7C776002CD6DD /* smartfinwatchos Watch App.app */,
 				FD7609372FB7C776002CD6DD /* smartfinTests.xctest */,
 				FD7609382FB7C776002CD6DD /* smartfinUITests.xctest */,
