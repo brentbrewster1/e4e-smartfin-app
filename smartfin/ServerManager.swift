@@ -65,6 +65,22 @@ class ServerManager: ObservableObject {
         return createResponse.id
     }
     
+    func getEnsembles() async throws -> [EnsembleReading] {
+        
+        guard let url = URL(string: SERVER_BASE_URL + "/ensembles") else {
+            throw URLError(.badURL)
+        }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let serverEnsembles = try decoder.decode([ServerEnsemble].self, from: data)
+
+        return serverEnsembles.map { $0.toEnsembleReading() }
+    }
+    
     func postEnsemble(
         _ ensemble: EnsembleReading,
         serverSessionId: Int
@@ -110,7 +126,7 @@ class ServerManager: ObservableObject {
         let decoder = JSONDecoder()
 
         let uploadResponse = try decoder.decode(
-            CreatEnsembleResponse.self,
+            CreateEnsembleResponse.self,
             from: data
         )
 
@@ -161,7 +177,7 @@ struct CreateSessionResponse: Codable {
     let id: Int
 }
 
-struct CreatEnsembleResponse: Codable {
+struct CreateEnsembleResponse: Codable {
     let status: String
     let id: Int
 }
