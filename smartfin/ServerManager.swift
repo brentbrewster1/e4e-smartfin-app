@@ -157,7 +157,7 @@ struct ServerSession: Codable {
 
 // server session object -> watch app session object conversion
 extension ServerSession {
-    func toSessionData(deviceName: String = "Unknown Device") -> SessionData {
+    func toSessionData(deviceName: String = "SmartFin") -> SessionData {
         SessionData(
             id: clientSessionId,
             serverId: id,
