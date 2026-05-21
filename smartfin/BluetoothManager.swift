@@ -16,6 +16,8 @@ class BluetoothManager: NSObject, ObservableObject {
     // MARK: - Core Bluetooth
     var centralManager: CBCentralManager?
     private var smartFinCharacteristic: CBCharacteristic?
+    // Keep a strong reference to the peripheral we're attempting to connect to
+    private var pendingPeripheral: CBPeripheral?
     
     // MARK: - Service & Characteristic UUIDs
     // Update these with actual SmartFin UUIDs (leave as placeholder for previews)
@@ -96,6 +98,10 @@ class BluetoothManager: NSObject, ObservableObject {
         stopScanning()
         connectionStatus = "Connecting to \(peripheral.name ?? "SmartFin")..."
         appendToDataLog("Connecting to \(peripheral.name ?? "SmartFin")")
+        // Retain the peripheral while connection is in progress and ensure we
+        // receive peripheral delegate callbacks by setting the delegate now.
+        pendingPeripheral = peripheral
+        peripheral.delegate = self
         centralManager?.connect(peripheral, options: nil)
     }
     
@@ -148,6 +154,8 @@ extension BluetoothManager: CBCentralManagerDelegate {
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         isConnected = true
+        // Clear pending and promote to connectedDevice
+        pendingPeripheral = nil
         connectedDevice = peripheral
         connectionStatus = "Connected to \(peripheral.name ?? "SmartFin")"
         appendToDataLog("Connected to \(peripheral.name ?? "SmartFin")")
@@ -160,13 +168,18 @@ extension BluetoothManager: CBCentralManagerDelegate {
     
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         isConnected = false
+        pendingPeripheral = nil
         connectionStatus = "Failed to connect: \(error?.localizedDescription ?? "Unknown error")"
         appendToDataLog(connectionStatus)
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         isConnected = false
-        connectedDevice = nil
+        // Clear both connected and pending references
+        if connectedDevice?.identifier == peripheral.identifier {
+            connectedDevice = nil
+        }
+        pendingPeripheral = nil
         
         if let error = error {
             connectionStatus = "Disconnected: \(error.localizedDescription)"
@@ -218,12 +231,20 @@ extension BluetoothManager: CBPeripheralDelegate {
                 // Log raw payload for easier debugging
                 appendToDataLog("Raw payload: \(hexString(from: data))")
 
-                // Simplified parsing for frontend: 
+                // Simplified parsing for frontend:
                 // - If payload >= 5 bytes and first byte looks like ensemble ID, parse temp from bytes 1..4
                 // - Otherwise if payload >= 4, parse temp from bytes 0..3 (legacy float)
                 // - Do not attempt IMU parsing here (unknown format). Leave imuMatrix/imuSamples empty.
                 simpleParsePayload(data)
             }
+            else{
+                appendToDataLog("data != characteristic.value")
+
+            }
+            
+        }
+        else{
+            appendToDataLog("smartFinCharacteristic == nil || characteristic.uuid == smartFinCharacteristic?.uuid")
         }
     }
                 
