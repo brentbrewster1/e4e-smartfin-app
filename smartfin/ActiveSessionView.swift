@@ -19,13 +19,20 @@ struct ActiveSessionView: View {
                 .foregroundColor(.green)
                 .monospacedDigit()
 
-            VStack(spacing: 1) {
+            VStack(spacing: 2) {
                 Text("Temp")
                     .font(.caption2)
                     .foregroundColor(.gray)
-                Text(String(format: "%.0f°F", sessionManager.currentTemperature))
-                    .font(.system(size: 33, weight: .semibold))
+                Text(String(format: "%.1f°F", bluetoothManager.currentTemperature))
+                    .font(.system(size: 33, weight: .semibold, design: .rounded))
                     .foregroundColor(.white)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .animation(.snappy(duration: 0.2), value: bluetoothManager.currentTemperature)
+                Text(String(format: "%.1f°C · %@", bluetoothManager.currentTemperatureCelsius, bluetoothManager.waterStatus))
+                    .font(.caption2)
+                    .foregroundColor(.gray)
+                    .monospacedDigit()
             }
 
             HStack(spacing: 2) {

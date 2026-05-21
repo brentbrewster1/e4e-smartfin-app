@@ -209,6 +209,7 @@ class BluetoothManager: NSObject, ObservableObject {
     @Published var isConnected: Bool = false
     @Published var connectionStatus: String = "Searching for SmartFin..."
     @Published var currentTemperature: Double = 67.0
+    @Published var currentTemperatureCelsius: Double = 19.4
     @Published var waterStatus: String = "unknown"
     @Published var batteryLevel: Int = 100
     @Published var dataLog: [String] = []
@@ -354,8 +355,8 @@ class BluetoothManager: NSObject, ObservableObject {
     private func applyDecodedEnsembles(_ ensembles: [DecodedFinEnsemble]) {
         for e in ensembles {
             if case .temperatureWater(_, let celsius, let waterRaw, _) = e {
-                let tempF = celsius * 9.0 / 5.0 + 32.0
-                currentTemperature = tempF
+                currentTemperatureCelsius = celsius
+                currentTemperature = celsius * 9.0 / 5.0 + 32.0
                 waterStatus = Self.waterStatusString(waterRaw)
             }
         }
