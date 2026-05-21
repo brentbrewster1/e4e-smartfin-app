@@ -41,9 +41,7 @@ struct ActiveSessionView: View {
                 .font(.caption2)
                 .foregroundColor(.gray)
 
-            #if os(iOS)
             liveDataSection
-            #endif
 
             Spacer()
 
@@ -59,7 +57,6 @@ struct ActiveSessionView: View {
         .padding()
     }
 
-    #if os(iOS)
     private var liveDataSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("LIVE DATA")
@@ -67,28 +64,44 @@ struct ActiveSessionView: View {
                 .fontWeight(.bold)
                 .foregroundColor(.gray)
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
-                    if bluetoothManager.dataLog.isEmpty {
-                        Text("Waiting for data...")
-                            .font(.system(.caption2, design: .monospaced))
-                            .foregroundColor(.gray)
-                    } else {
-                        ForEach(Array(bluetoothManager.dataLog.suffix(8).enumerated()), id: \.offset) { _, message in
-                            Text(message)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if bluetoothManager.dataLog.isEmpty {
+                            Text("Waiting for data...")
                                 .font(.system(.caption2, design: .monospaced))
-                                .foregroundColor(.green)
+                                .foregroundColor(.gray)
+                        } else {
+                            ForEach(Array(bluetoothManager.dataLog.suffix(liveLineCount).enumerated()), id: \.offset) { index, message in
+                                Text(message)
+                                    .font(.system(.caption2, design: .monospaced))
+                                    .foregroundColor(message.contains("(!)") ? .orange : .green)
+                                    .id(index)
+                            }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: liveLogHeight)
+                .background(Color.black.opacity(0.85))
+                .cornerRadius(8)
+                .onChange(of: bluetoothManager.dataLog.count) { _ in
+                    let last = max(0, bluetoothManager.dataLog.count - 1)
+                    withAnimation {
+                        proxy.scrollTo(last, anchor: .bottom)
+                    }
+                }
             }
-            .frame(height: 100)
-            .background(Color.black.opacity(0.85))
-            .cornerRadius(8)
         }
         .padding(.horizontal, 8)
         .padding(.top, 8)
     }
+
+    #if os(watchOS)
+    private var liveLineCount: Int { 10 }
+    private var liveLogHeight: CGFloat { 72 }
+    #else
+    private var liveLineCount: Int { 16 }
+    private var liveLogHeight: CGFloat { 140 }
     #endif
 }

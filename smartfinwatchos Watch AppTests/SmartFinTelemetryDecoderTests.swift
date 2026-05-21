@@ -13,12 +13,13 @@ struct SmartFinTelemetryDecoderTests {
         let bytes: [UInt8] = [0x01, 0, 0, 0, 0x06, 0, 0x01, 0, 0, 0, 0x05, 0x01]
         let decoded = SmartFinTelemetryDecoder.decodePacket(Data(bytes))
         #expect(decoded.count == 1)
-        guard case .temperatureWater(_, let celsius, let water) = decoded[0] else {
+        guard case .temperatureWater(_, let celsius, let water, let tempRaw) = decoded[0] else {
             #expect(false, "Expected temperatureWater ensemble")
             return
         }
         #expect(abs(celsius - 10.0) < 0.001)
         #expect(water == 1)
+        #expect(tempRaw == 1280)
     }
 
     @Test func emptyWhenTooShort() {

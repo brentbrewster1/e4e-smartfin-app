@@ -40,3 +40,7 @@ Package.resolved
 
 # Cursor / editor (optional)
 .cursor/
+
+# Local reference / spec copies (not required to build)
+smartfin_data.txt
+smartfin-decode-reference.md

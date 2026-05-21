@@ -11,7 +11,7 @@ enum SmartFinDecodeError: Error, Equatable {
 }
 
 enum DecodedFinEnsemble: Equatable {
-    case temperatureWater(finElapsedDs: UInt32, celsius: Double, waterRaw: UInt8)
+    case temperatureWater(finElapsedDs: UInt32, celsius: Double, waterRaw: UInt8, tempRaw: Int16)
     case highRateIMU(finElapsedDs: UInt32, imu9: [Double])
 }
 
@@ -53,7 +53,8 @@ enum SmartFinTelemetryDecoder {
                     results.append(.temperatureWater(
                         finElapsedDs: header.elapsedTimeDeciseconds,
                         celsius: reading.temperatureCelsius,
-                        waterRaw: reading.waterStatusRaw
+                        waterRaw: reading.waterStatusRaw,
+                        tempRaw: reading.temperatureRaw
                     ))
                 }
             case ensHighRateIMU:
@@ -92,6 +93,7 @@ enum SmartFinTelemetryDecoder {
     }
 
     private struct TemperatureWaterReading {
+        let temperatureRaw: Int16
         let temperatureCelsius: Double
         let waterStatusRaw: UInt8
     }
@@ -106,7 +108,54 @@ enum SmartFinTelemetryDecoder {
         let water = data[valueOffset + 2]
         let tempC = Double(raw) / 128.0
 
-        return TemperatureWaterReading(temperatureCelsius: tempC, waterStatusRaw: water)
+        return TemperatureWaterReading(temperatureRaw: raw, temperatureCelsius: tempC, waterStatusRaw: water)
+    }
+
+    /// Lines for the in-app live data log (raw hex + decoded fields).
+    static func liveLogLines(for data: Data, decoded: [DecodedFinEnsemble], maxHexBytes: Int = 40) -> [String] {
+        var lines: [String] = []
+        let shown = data.prefix(maxHexBytes)
+        let hex = shown.map { String(format: "%02x", $0) }.joined(separator: " ")
+        let suffix = data.count > maxHexBytes ? " +\(data.count - maxHexBytes)b" : ""
+        lines.append("rx \(data.count)b: \(hex)\(suffix)")
+
+        if data.count >= 6 {
+            let ver = data[0]
+            let typ = data[1]
+            let seq = readUInt16LE(data, offset: 2)
+            let payLen = readUInt16LE(data, offset: 4)
+            lines.append("  hdr v=\(ver) typ=\(typ) seq=\(seq) payLen=\(payLen)")
+        }
+
+        if decoded.isEmpty {
+            lines.append("  decoded: (none)")
+            return lines
+        }
+
+        for item in decoded {
+            switch item {
+            case .temperatureWater(let finDs, let celsius, let waterRaw, let tempRaw):
+                let tempF = celsius * 9.0 / 5.0 + 32.0
+                let water: String
+                switch waterRaw {
+                case 0: water = "dry"
+                case 1: water = "in-water"
+                default: water = "raw_\(waterRaw)"
+                }
+                var line = String(
+                    format: "  01 temp raw=%d -> %.2fC %.0fF %@ finDs=%u",
+                    tempRaw, celsius, tempF, water, finDs
+                )
+                if tempF < -50 || tempF > 150 || celsius < -10 || celsius > 60 {
+                    line += " (!)"
+                }
+                lines.append(line)
+            case .highRateIMU(let finDs, let imu9):
+                let preview = imu9.prefix(3).map { String(format: "%.3f", $0) }.joined(separator: ",")
+                lines.append("  0C imu [\(preview),…] finDs=\(finDs)")
+            }
+        }
+        return lines
     }
 
     private struct HighRateIMUReading {
@@ -304,7 +353,7 @@ class BluetoothManager: NSObject, ObservableObject {
 
     private func applyDecodedEnsembles(_ ensembles: [DecodedFinEnsemble]) {
         for e in ensembles {
-            if case .temperatureWater(_, let celsius, let waterRaw) = e {
+            if case .temperatureWater(_, let celsius, let waterRaw, _) = e {
                 let tempF = celsius * 9.0 / 5.0 + 32.0
                 currentTemperature = tempF
                 waterStatus = Self.waterStatusString(waterRaw)
@@ -316,13 +365,15 @@ class BluetoothManager: NSObject, ObservableObject {
         let copy = Data(data)
         telemetryDecodeQueue.async { [weak self] in
             let decoded = SmartFinTelemetryDecoder.decodePacket(copy)
+            let logLines = SmartFinTelemetryDecoder.liveLogLines(for: copy, decoded: decoded)
             DispatchQueue.main.async {
                 guard let self = self else { return }
+                for line in logLines {
+                    self.appendToDataLog(line)
+                }
                 if !decoded.isEmpty {
                     self.applyDecodedEnsembles(decoded)
                     self.decodedTelemetry.send(decoded)
-                } else if copy.count >= 6 {
-                    self.appendToDataLog("Tele: 0 ensembles (\(copy.count) B) \(self.hexString(from: Data(copy.prefix(16))))")
                 }
             }
         }

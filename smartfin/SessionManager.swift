@@ -208,7 +208,7 @@ class SessionManager: NSObject, ObservableObject {
 
         for ensemble in ensembles {
             switch ensemble {
-            case .temperatureWater(let finDs, let celsius, let waterRaw):
+            case .temperatureWater(let finDs, let celsius, let waterRaw, _):
                 let tempF = celsius * 9.0 / 5.0 + 32.0
                 lastTemperatureF = tempF
                 appendCollectedReading(
