@@ -12,22 +12,17 @@ class BluetoothManager: NSObject, ObservableObject {
     @Published var waterStatus: String = "unknown"
     @Published var batteryLevel: Int = 100
     @Published var dataLog: [String] = []
-    /// Total BLE advertisement packets received from scan-start until connection was established.
-    @Published var packetsUntilConnected: Int = 0
     
     // MARK: - Core Bluetooth
     var centralManager: CBCentralManager?
     private var smartFinCharacteristic: CBCharacteristic?
-    // Keep a strong reference to the peripheral we're attempting to connect to
-    private var pendingPeripheral: CBPeripheral?
-    /// Running count of every advertisement packet heard since the last scan start.
-    private var advertisementPacketCount: Int = 0
     
     // MARK: - Service & Characteristic UUIDs
     // Update these with actual SmartFin UUIDs (leave as placeholder for previews)
     private let smartFinServiceUUIDString = "SF-SERVICE-UUID"
     private let smartFinCharacteristicUUIDString = "SF-CHARACTERISTIC-UUID"
-
+    private var packetCount = 0;
+    private var failedPacketCount = 0;
     // Parsed CBUUIDs (nil when placeholder/invalid)
     private lazy var smartFinServiceUUID: CBUUID? = {
         return Self.cbuuid(from: smartFinServiceUUIDString)
@@ -75,8 +70,6 @@ class BluetoothManager: NSObject, ObservableObject {
         }
         
         discoveredPeripherals.removeAll()
-        advertisementPacketCount = 0
-        packetsUntilConnected = 0
         connectionStatus = "Searching for SmartFin..."
         appendToDataLog("Started scanning for SmartFin devices")
         
@@ -104,10 +97,6 @@ class BluetoothManager: NSObject, ObservableObject {
         stopScanning()
         connectionStatus = "Connecting to \(peripheral.name ?? "SmartFin")..."
         appendToDataLog("Connecting to \(peripheral.name ?? "SmartFin")")
-        // Retain the peripheral while connection is in progress and ensure we
-        // receive peripheral delegate callbacks by setting the delegate now.
-        pendingPeripheral = peripheral
-        peripheral.delegate = self
         centralManager?.connect(peripheral, options: nil)
     }
     
@@ -148,31 +137,23 @@ extension BluetoothManager: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        // Count every advertisement packet heard regardless of device identity
-        advertisementPacketCount += 1
-
         // Filter for SmartFin devices
         if let name = peripheral.name, name.contains("SmartFin") || name.contains("Smartfin") {
             // Avoid duplicates
             if !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) {
                 discoveredPeripherals.append(peripheral)
-                appendToDataLog("Discovered: \(name) (RSSI: \(RSSI)) after \(advertisementPacketCount) total adv. packets")
+                appendToDataLog("Discovered: \(name) (RSSI: \(RSSI))")
             }
         }
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        // Freeze the advertisement packet count at the moment of connection
-        packetsUntilConnected = advertisementPacketCount
-        advertisementPacketCount = 0
-
         isConnected = true
-        // Clear pending and promote to connectedDevice
-        pendingPeripheral = nil
         connectedDevice = peripheral
         connectionStatus = "Connected to \(peripheral.name ?? "SmartFin")"
-        appendToDataLog("Connected to \(peripheral.name ?? "SmartFin") — packets until connect: \(packetsUntilConnected)")
-        
+        appendToDataLog("Connected to \(peripheral.name ?? "SmartFin")")
+        packetCount = 0;
+        failedPacketCount = 0;
         // Set delegate and discover services
         peripheral.delegate = self
         // If we have a configured service UUID use it, otherwise discover all services
@@ -181,18 +162,13 @@ extension BluetoothManager: CBCentralManagerDelegate {
     
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         isConnected = false
-        pendingPeripheral = nil
         connectionStatus = "Failed to connect: \(error?.localizedDescription ?? "Unknown error")"
         appendToDataLog(connectionStatus)
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         isConnected = false
-        // Clear both connected and pending references
-        if connectedDevice?.identifier == peripheral.identifier {
-            connectedDevice = nil
-        }
-        pendingPeripheral = nil
+        connectedDevice = nil
         
         if let error = error {
             connectionStatus = "Disconnected: \(error.localizedDescription)"
@@ -207,7 +183,6 @@ extension BluetoothManager: CBCentralManagerDelegate {
 extension BluetoothManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let services = peripheral.services else { return }
-
         for service in services {
             // If we have a configured temperature characteristic UUID, request only that one.
             // Otherwise request all characteristics so we can inspect them.
@@ -244,20 +219,15 @@ extension BluetoothManager: CBPeripheralDelegate {
                 // Log raw payload for easier debugging
                 appendToDataLog("Raw payload: \(hexString(from: data))")
 
-                // Simplified parsing for frontend:
+                // Simplified parsing for frontend: 
                 // - If payload >= 5 bytes and first byte looks like ensemble ID, parse temp from bytes 1..4
                 // - Otherwise if payload >= 4, parse temp from bytes 0..3 (legacy float)
                 // - Do not attempt IMU parsing here (unknown format). Leave imuMatrix/imuSamples empty.
                 simpleParsePayload(data)
             }
-            else{
-                appendToDataLog("data != characteristic.value")
-
-            }
-            
-        }
-        else{
-            appendToDataLog("smartFinCharacteristic == nil || characteristic.uuid == smartFinCharacteristic?.uuid")
+        } else {
+            failedPacketCount+=1;
+            appendToDataLog("Invalid UUID of the characteristic")
         }
     }
                 
@@ -267,6 +237,7 @@ extension BluetoothManager: CBPeripheralDelegate {
         // - If payload >=5 bytes: assume [id:1][temp:4] and optional water byte at index 5
         // - Else if payload >=4: assume legacy float at start
         // - Do not attempt to extract IMU data here
+        
         let count = data.count
         if count >= 5 {
             // temp bytes are 1..4
@@ -274,7 +245,8 @@ extension BluetoothManager: CBPeripheralDelegate {
             let u32 = UInt32(littleEndian: tempData.withUnsafeBytes { $0.load(as: UInt32.self) })
             let f = Float(bitPattern: u32)
             currentTemperature = Double(f)
-
+            packetCount+=1;
+            appendToDataLog("Packet Count: \(packetCount)")
             if count >= 6 {
                 let w = data[5]
                 waterStatus = (w == 0) ? "dry" : "in-water"
@@ -282,6 +254,10 @@ extension BluetoothManager: CBPeripheralDelegate {
 
             appendToDataLog("Parsed payload: temp=\(String(format: "%.2f", currentTemperature)), water=\(waterStatus)")
             return
+        } else {
+            failedPacketCount+=1;
+            appendToDataLog("Dropped packet #\(packetCount): too short (\(count) bytes)")
+
         }
 
         if count >= 4 {
