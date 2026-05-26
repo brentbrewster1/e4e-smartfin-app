@@ -72,7 +72,7 @@ struct ContentView: View {
             
             Spacer()
 
-#if DEBUG && targetEnvironment(simulator)
+// #if DEBUG && targetEnvironment(simulator)
             VStack(spacing: 10) {
                 Button(action: {
                     syncDataManager.sendDebugMockBatchToServer()
@@ -108,7 +108,7 @@ struct ContentView: View {
                 }
             }
             .padding(.horizontal)
-#endif
+// #endif
             
             // --- CONNECT BUTTON ---
             Button(action: {
