@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ActiveSessionView: View {
     @ObservedObject var sessionManager: SessionManager
+    @ObservedObject var watchSyncManager: WatchSyncDataManager
     let onEnd: () -> Void
     
     var body: some View {
@@ -31,14 +32,28 @@ struct ActiveSessionView: View {
                     .foregroundColor(.white)
             }
             
-            // GPS Status
-            HStack(spacing: 2) {
-                Text("GPS")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.caption)
-                    .foregroundColor(.green)
+            // GPS and Phone Reachability Status
+            HStack(spacing: 8) {
+                // GPS Status
+                HStack(spacing: 2) {
+                    Text("GPS")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+
+                // Phone reachability
+                HStack(spacing: 2) {
+                    Text("Phone")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Image(systemName: watchSyncManager.isReachable ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .font(.caption)
+                        .foregroundColor(watchSyncManager.isReachable ? .green : .gray)
+                        .accessibilityLabel(watchSyncManager.isReachable ? "Phone reachable" : "Phone not reachable")
+                }
             }
             
             Spacer()
@@ -59,6 +74,7 @@ struct ActiveSessionView: View {
 #Preview {
     ActiveSessionView(
         sessionManager: SessionManager(),
+        watchSyncManager: WatchSyncDataManager(sessionManager: SessionManager()),
         onEnd: {}
     )
 }

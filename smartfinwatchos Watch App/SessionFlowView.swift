@@ -65,6 +65,7 @@ struct SessionFlowView: View {
             case .active:
                 ActiveSessionView(
                     sessionManager: sessionManager,
+                    watchSyncManager: watchSyncManager,
                     onEnd: {
                         sessionState = .complete
                         sessionManager.endSession()
