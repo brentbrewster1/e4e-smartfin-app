@@ -58,8 +58,8 @@ TMP="${EXT}/.xcframework-staging"
 rm -rf "${TMP}"
 mkdir -p "${TMP}"
 
-echo "== iOS Simulator (arm64) =="
-cmake_build "${EXT}/build-ios-simulator" "iOS" "iphonesimulator" "arm64"
+echo "== iOS Simulator (arm64 + x86_64) =="
+cmake_build "${EXT}/build-ios-simulator" "iOS" "iphonesimulator" "arm64;x86_64"
 stage_slice "${TMP}/ios-arm64-simulator" "${EXT}/build-ios-simulator" "libsmartfin-iphonesimulator.a"
 
 echo "== iOS Device (arm64) =="
@@ -70,8 +70,8 @@ echo "== watchOS Device (arm64) =="
 cmake_build "${EXT}/build-watchos-device" "watchOS" "watchos" "arm64"
 stage_slice "${TMP}/watchos-arm64" "${EXT}/build-watchos-device" "libsmartfin-watchos.a"
 
-echo "== watchOS Simulator (arm64) =="
-cmake_build "${EXT}/build-watchos-simulator" "watchOS" "watchsimulator" "arm64"
+echo "== watchOS Simulator (arm64 + x86_64) =="
+cmake_build "${EXT}/build-watchos-simulator" "watchOS" "watchsimulator" "arm64;x86_64"
 stage_slice "${TMP}/watchos-arm64-simulator" "${EXT}/build-watchos-simulator" "libsmartfin-watchsimulator.a"
 
 mkdir -p "${VENDOR}"
