@@ -25,6 +25,7 @@ struct SessionFlowView: View {
             case .ready:
                 ReadyView(onStart: {
                     if bluetoothManager.isConnected {
+                        bluetoothManager.clearNativeDecoder()
                         sessionManager.prepareSession(deviceName: bluetoothManager.connectedDevice?.name ?? "SmartFin")
                         sessionState = .active
                         sessionManager.startSession()
@@ -78,6 +79,7 @@ struct SessionFlowView: View {
                     onNewSession: {
                         bluetoothManager.disconnect()
                         bluetoothManager.endDeviceSearch()
+                        bluetoothManager.clearNativeDecoder()
                         sessionState = .ready
                         sessionManager.reset()
                     }
@@ -90,6 +92,7 @@ struct SessionFlowView: View {
         .onChange(of: bluetoothManager.isConnected) { connected in
             guard connected else { return }
             if sessionState == .selectFin {
+                bluetoothManager.clearNativeDecoder()
                 sessionManager.prepareSession(deviceName: bluetoothManager.connectedDevice?.name ?? "SmartFin")
                 sessionState = .active
                 sessionManager.startSession()

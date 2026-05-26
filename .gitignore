@@ -336,7 +336,7 @@ iOSInjectionProject/
 ### SwiftPackageManager ###
 Packages
 xcuserdata
-*.xcodeproj
+# Do not ignore *.xcodeproj here — this repo commits smartfin.xcodeproj (see Xcode Patch below).
 
 
 ### SwiftPM ###
@@ -356,49 +356,44 @@ xcuserdata
 **/xcshareddata/WorkspaceSettings.xcsettings
 
 # End of https://www.toptal.com/developers/gitignore/api/c++,macos,python,doxygen,particle,xcode,swift,swiftpackagemanager,swiftpm
-external/# Xcode
-build/
+
+# =============================================================================
+# SmartFin app — project-specific (commit source, Xcode project, Vendor/, scripts/)
+# =============================================================================
+
+# Xcode / CLI derived data (xcodebuild -derivedDataPath …)
 DerivedData/
-*.xcuserstate
-*.xcbkptlist
-xcuserdata/
-*.moved-aside
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-*.hmap
-*.ipa
-*.dSYM.zip
-*.dSYM
-
-# Local derived data (agent / CLI builds)
-.dd*/
 .derivedData*/
-
-# Swift Package Manager
-.build/
-.swiftpm/
-Package.resolved
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-._*
+.dd*/
 
 # Env / secrets
 .env
 .env.*
 *.pem
 
-# Cursor / editor (optional)
+# Editor / IDE (local only)
 .cursor/
+.idea/
 
-# Local reference / spec copies (not required to build)
+# Local copies of specs or integration notes (canonical copy: external/docs/)
 smartfin_data.txt
 smartfin-decode-reference.md
+swift_integration.md
+
+# C++ submodule: CMake / FetchContent output (rebuild Vendor with scripts/build_smartfin_xcframework.sh)
+external/build/
+external/build-*/
+external/_deps/
+external/.xcframework-staging/
+external/**/CMakeFiles/
+external/**/cmake_install.cmake
+external/**/compile_commands.json
+external/**/*.a
+external/**/*.o
+external/**/CTestTestfile.cmake
+external/**/Makefile
+
+# Prebuilt native bridge for Xcode (override global *.a from the C++ template above)
+!Vendor/
+!Vendor/**
+!Vendor/**/*.a

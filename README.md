@@ -7,15 +7,24 @@
 
 ## Open and build
 
-1. Clone and open `smartfin.xcodeproj`.
-2. Scheme **smartfin** → iPhone simulator or device → Build (⌘B) or Run (⌘R).
-3. Scheme **smartfinwatchos Watch App** for watch-only UI.
+1. Clone with submodules and open `smartfin.xcodeproj`:
+   ```bash
+   git clone --recurse-submodules <repo-url>
+   cd e4e-smartfin-app-2
+   ```
+   If you already cloned without submodules: `git submodule update --init --recursive`.
+2. Prebuilt C++ decode libraries live in `Vendor/SmartfinBridge-*.xcframework` (linked by both iOS and watch targets). To rebuild after changing `external/`:
+   ```bash
+   ./scripts/build_smartfin_xcframework.sh
+   ```
+3. Scheme **smartfin** → iPhone simulator or device → Build (⌘B) or Run (⌘R).
+4. Scheme **smartfinwatchos Watch App** for watch-only UI.
 
 Session flow (start → connect SmartFin → record → save → history) is shared between iPhone and watch. Saved sample JSON lives in each app’s Application Support (`SmartFinSessionReadings/`).
 
 ## Testing
 
-- Unit tests: **smartfin** scheme → `SmartFinTelemetryDecoderTests` in `smartfinTests`.
+- Unit tests: **smartfin** scheme → `SmartFinTelemetryDecoderTests` in `smartfinTests` (exercises the native C++ bridge via `SmartfinNativeDecoder`).
 - Device: use a real iPhone to scan/connect to a fin named with `smartfin`.
 
 ## Notes

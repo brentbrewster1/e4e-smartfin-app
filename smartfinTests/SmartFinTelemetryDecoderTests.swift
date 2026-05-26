@@ -9,20 +9,18 @@ import Testing
 
 struct SmartFinTelemetryDecoderTests {
 
-    @Test func decodesSingleTemperatureEnsemble() {
-        let bytes: [UInt8] = [0x01, 0, 0, 0, 0x06, 0, 0x01, 0, 0, 0, 0x05, 0x01]
-        let decoded = SmartFinTelemetryDecoder.decodePacket(Data(bytes))
-        #expect(decoded.count == 1)
-        guard case .temperatureWater(_, let celsius, let water, let tempRaw) = decoded[0] else {
-            #expect(false, "Expected temperatureWater ensemble")
-            return
-        }
-        #expect(abs(celsius - 10.0) < 0.001)
-        #expect(water == 1)
-        #expect(tempRaw == 1280)
+    @Test func nativeDecoderAcceptsMinimalPacket() {
+        let decoder = SmartfinNativeDecoder()
+        // Transport v=1, type=0, seq=0, payloadLen=0 — valid header, no ensembles.
+        let bytes: [UInt8] = [0x01, 0, 0, 0, 0, 0]
+        let result = decoder.pushPacket(Data(bytes))
+        #expect(result == 0)
+        #expect(decoder.drainNewSamples().isEmpty)
     }
 
-    @Test func emptyWhenTooShort() {
-        #expect(SmartFinTelemetryDecoder.decodePacket(Data([1, 2, 3])).isEmpty)
+    @Test func nativeDecoderRejectsTruncatedPacket() {
+        let decoder = SmartfinNativeDecoder()
+        let result = decoder.pushPacket(Data([0x01, 0, 0]))
+        #expect(result != 0)
     }
 }

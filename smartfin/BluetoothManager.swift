@@ -2,206 +2,6 @@ import Foundation
 import CoreBluetooth
 import Combine
 
-enum SmartFinDecodeError: Error, Equatable {
-    case packetTooShort
-    case incompleteEnsembleHeader
-    case incompleteTemperatureRecord
-    case incompleteIMURecord
-    case outOfBounds
-}
-
-enum DecodedFinEnsemble: Equatable {
-    case temperatureWater(finElapsedDs: UInt32, celsius: Double, waterRaw: UInt8, tempRaw: Int16)
-    case highRateIMU(finElapsedDs: UInt32, imu9: [Double])
-}
-
-enum SmartFinTelemetryDecoder {
-    private static let transportHeaderSize = 6
-    private static let ensembleHeaderSize = 3
-    private static let ensTemp: UInt8 = 0x01
-    private static let ensHighRateIMU: UInt8 = 0x0C
-
-    static func decodePacket(_ data: Data) -> [DecodedFinEnsemble] {
-        guard data.count >= transportHeaderSize else { return [] }
-
-        let payloadLen = readUInt16LE(data, offset: 4)
-        let payloadEnd = min(data.count, transportHeaderSize + Int(payloadLen))
-        let payload = data.subdata(in: transportHeaderSize..<payloadEnd)
-
-        var results: [DecodedFinEnsemble] = []
-        var offset = 0
-
-        while offset + ensembleHeaderSize <= payload.count {
-            guard let header = try? decodeEnsembleHeader(payload, offset: offset) else { break }
-
-            let recordSize: Int?
-            switch header.ensembleType {
-            case ensTemp:
-                recordSize = ensembleHeaderSize + 3
-            case ensHighRateIMU:
-                recordSize = ensembleHeaderSize + 18
-            default:
-                recordSize = nil
-            }
-
-            guard let rs = recordSize else { break }
-            if offset + rs > payload.count { break }
-
-            switch header.ensembleType {
-            case ensTemp:
-                if let reading = try? decodeTemperatureWater(payload, offset: offset) {
-                    results.append(.temperatureWater(
-                        finElapsedDs: header.elapsedTimeDeciseconds,
-                        celsius: reading.temperatureCelsius,
-                        waterRaw: reading.waterStatusRaw,
-                        tempRaw: reading.temperatureRaw
-                    ))
-                }
-            case ensHighRateIMU:
-                if let reading = try? decodeHighRateIMU(payload, offset: offset) {
-                    results.append(.highRateIMU(finElapsedDs: header.elapsedTimeDeciseconds, imu9: reading.imu9))
-                }
-            default:
-                break
-            }
-
-            offset += rs
-        }
-
-        return results
-    }
-
-    private struct EnsembleHeader {
-        let ensembleType: UInt8
-        let elapsedTimeDeciseconds: UInt32
-    }
-
-    private static func decodeEnsembleHeader(_ data: Data, offset: Int) throws -> EnsembleHeader {
-        guard offset + ensembleHeaderSize <= data.count else {
-            throw SmartFinDecodeError.incompleteEnsembleHeader
-        }
-
-        let b0 = UInt32(data[offset])
-        let b1 = UInt32(data[offset + 1])
-        let b2 = UInt32(data[offset + 2])
-        let headerWord = b0 | (b1 << 8) | (b2 << 16)
-
-        let ensembleType = UInt8(headerWord & 0x0F)
-        let elapsedTimeDs = (headerWord >> 4) & 0xFFFFF
-
-        return EnsembleHeader(ensembleType: ensembleType, elapsedTimeDeciseconds: elapsedTimeDs)
-    }
-
-    private struct TemperatureWaterReading {
-        let temperatureRaw: Int16
-        let temperatureCelsius: Double
-        let waterStatusRaw: UInt8
-    }
-
-    private static func decodeTemperatureWater(_ data: Data, offset: Int) throws -> TemperatureWaterReading {
-        let valueOffset = offset + ensembleHeaderSize
-        guard valueOffset + 3 <= data.count else {
-            throw SmartFinDecodeError.incompleteTemperatureRecord
-        }
-
-        let raw = try readInt16LE(data, offset: valueOffset)
-        let water = data[valueOffset + 2]
-        let tempC = Double(raw) / 128.0
-
-        return TemperatureWaterReading(temperatureRaw: raw, temperatureCelsius: tempC, waterStatusRaw: water)
-    }
-
-    /// Lines for the in-app live data log (raw hex + decoded fields).
-    static func liveLogLines(for data: Data, decoded: [DecodedFinEnsemble], maxHexBytes: Int = 40) -> [String] {
-        var lines: [String] = []
-        let shown = data.prefix(maxHexBytes)
-        let hex = shown.map { String(format: "%02x", $0) }.joined(separator: " ")
-        let suffix = data.count > maxHexBytes ? " +\(data.count - maxHexBytes)b" : ""
-        lines.append("rx \(data.count)b: \(hex)\(suffix)")
-
-        if data.count >= 6 {
-            let ver = data[0]
-            let typ = data[1]
-            let seq = readUInt16LE(data, offset: 2)
-            let payLen = readUInt16LE(data, offset: 4)
-            lines.append("  hdr v=\(ver) typ=\(typ) seq=\(seq) payLen=\(payLen)")
-        }
-
-        if decoded.isEmpty {
-            lines.append("  decoded: (none)")
-            return lines
-        }
-
-        for item in decoded {
-            switch item {
-            case .temperatureWater(let finDs, let celsius, let waterRaw, let tempRaw):
-                let tempF = celsius * 9.0 / 5.0 + 32.0
-                let water: String
-                switch waterRaw {
-                case 0: water = "dry"
-                case 1: water = "in-water"
-                default: water = "raw_\(waterRaw)"
-                }
-                var line = String(
-                    format: "  01 temp raw=%d -> %.2fC %.0fF %@ finDs=%u",
-                    tempRaw, celsius, tempF, water, finDs
-                )
-                if tempF < -50 || tempF > 150 || celsius < -10 || celsius > 60 {
-                    line += " (!)"
-                }
-                lines.append(line)
-            case .highRateIMU(let finDs, let imu9):
-                let preview = imu9.prefix(3).map { String(format: "%.3f", $0) }.joined(separator: ",")
-                lines.append("  0C imu [\(preview),…] finDs=\(finDs)")
-            }
-        }
-        return lines
-    }
-
-    private struct HighRateIMUReading {
-        let imu9: [Double]
-    }
-
-    private static func decodeHighRateIMU(_ data: Data, offset: Int) throws -> HighRateIMUReading {
-        let valueOffset = offset + ensembleHeaderSize
-        guard valueOffset + 18 <= data.count else {
-            throw SmartFinDecodeError.incompleteIMURecord
-        }
-
-        let ax = try readInt16LE(data, offset: valueOffset + 0)
-        let ay = try readInt16LE(data, offset: valueOffset + 2)
-        let az = try readInt16LE(data, offset: valueOffset + 4)
-        let gx = try readInt16LE(data, offset: valueOffset + 6)
-        let gy = try readInt16LE(data, offset: valueOffset + 8)
-        let gz = try readInt16LE(data, offset: valueOffset + 10)
-        let mx = try readInt16LE(data, offset: valueOffset + 12)
-        let my = try readInt16LE(data, offset: valueOffset + 14)
-        let mz = try readInt16LE(data, offset: valueOffset + 16)
-
-        let imu9: [Double] = [
-            Double(ax) / 16384.0, Double(ay) / 16384.0, Double(az) / 16384.0,
-            Double(gx) / 128.0, Double(gy) / 128.0, Double(gz) / 128.0,
-            Double(mx) / 8.0, Double(my) / 8.0, Double(mz) / 8.0
-        ]
-
-        return HighRateIMUReading(imu9: imu9)
-    }
-
-    private static func readInt16LE(_ data: Data, offset: Int) throws -> Int16 {
-        guard offset + 2 <= data.count else { throw SmartFinDecodeError.outOfBounds }
-        let lo = UInt16(data[offset])
-        let hi = UInt16(data[offset + 1])
-        return Int16(bitPattern: lo | (hi << 8))
-    }
-
-    private static func readUInt16LE(_ data: Data, offset: Int) -> UInt16 {
-        guard offset + 2 <= data.count else { return 0 }
-        let lo = UInt16(data[offset])
-        let hi = UInt16(data[offset + 1])
-        return lo | (hi << 8)
-    }
-}
-
 class BluetoothManager: NSObject, ObservableObject {
     // MARK: - Published Properties
     @Published var discoveredPeripherals: [CBPeripheral] = []
@@ -223,6 +23,7 @@ class BluetoothManager: NSObject, ObservableObject {
     private var pendingPeripheral: CBPeripheral?
 
     private let telemetryDecodeQueue = DispatchQueue(label: "com.smartfin.telemetry.decode", qos: .userInitiated)
+    private let nativeDecoder = SmartfinNativeDecoder()
 
     private var pendingStartScan = false
 
@@ -344,31 +145,29 @@ class BluetoothManager: NSObject, ObservableObject {
         data.map { String(format: "%02x", $0) }.joined()
     }
 
-    private static func waterStatusString(_ raw: UInt8) -> String {
-        switch raw {
-        case 0: return "dry"
-        case 1: return "in-water"
-        default: return "raw_\(raw)"
+    private func applyDecodedEnsembles(_ ensembles: [DecodedFinEnsemble]) {
+        for e in ensembles {
+            if case .temperatureWater(_, let celsius, let inWater) = e {
+                currentTemperatureCelsius = celsius
+                currentTemperature = celsius * 9.0 / 5.0 + 32.0
+                waterStatus = inWater ? "in-water" : "dry"
+            }
         }
     }
 
-    private func applyDecodedEnsembles(_ ensembles: [DecodedFinEnsemble]) {
-        for e in ensembles {
-            if case .temperatureWater(_, let celsius, let waterRaw, _) = e {
-                currentTemperatureCelsius = celsius
-                currentTemperature = celsius * 9.0 / 5.0 + 32.0
-                waterStatus = Self.waterStatusString(waterRaw)
-            }
-        }
+    func clearNativeDecoder() {
+        nativeDecoder.reset()
     }
 
     private func processTelemetryData(_ data: Data) {
         let copy = Data(data)
         telemetryDecodeQueue.async { [weak self] in
-            let decoded = SmartFinTelemetryDecoder.decodePacket(copy)
-            let logLines = SmartFinTelemetryDecoder.liveLogLines(for: copy, decoded: decoded)
+            guard let self = self else { return }
+            let pushResult = self.nativeDecoder.pushPacket(copy)
+            let samples = self.nativeDecoder.drainNewSamples()
+            let decoded = FinEnsembleMapper.ensembles(from: samples)
+            let logLines = SmartfinNativeDecoder.liveLogLines(for: copy, pushResult: pushResult, samples: samples)
             DispatchQueue.main.async {
-                guard let self = self else { return }
                 for line in logLines {
                     self.appendToDataLog(line)
                 }

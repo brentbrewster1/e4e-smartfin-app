@@ -70,14 +70,6 @@ class SessionManager: NSObject, ObservableObject {
             .store(in: &cancellables)
     }
 
-    private static func waterLabel(_ raw: UInt8) -> String {
-        switch raw {
-        case 0: return "dry"
-        case 1: return "in-water"
-        default: return "raw_\(raw)"
-        }
-    }
-    
     // MARK: - Location Setup
     private func setupLocationManager() {
         locationManager = CLLocationManager()
@@ -208,25 +200,34 @@ class SessionManager: NSObject, ObservableObject {
 
         for ensemble in ensembles {
             switch ensemble {
-            case .temperatureWater(let finDs, let celsius, let waterRaw, _):
+            case .temperatureWater(let finMs, let celsius, let inWater):
                 let tempF = celsius * 9.0 / 5.0 + 32.0
                 lastTemperatureF = tempF
                 appendCollectedReading(
                     ensembleType: "01",
                     temperature: tempF,
-                    waterStatus: Self.waterLabel(waterRaw),
+                    waterStatus: inWater ? "in-water" : "dry",
                     imuMatrix: nil,
                     imuSamples: nil,
-                    finElapsedTimeDeciseconds: finDs
+                    finElapsedTimeDeciseconds: finMs / 100
                 )
-            case .highRateIMU(let finDs, let imu9):
+            case .highRateIMU(let finMs, let imu9):
                 appendCollectedReading(
                     ensembleType: "0C",
                     temperature: lastTemperatureF,
                     waterStatus: "n/a",
                     imuMatrix: nil,
                     imuSamples: [imu9],
-                    finElapsedTimeDeciseconds: finDs
+                    finElapsedTimeDeciseconds: finMs / 100
+                )
+            case .quatImu(let finMs, let imu9, _):
+                appendCollectedReading(
+                    ensembleType: "0D",
+                    temperature: lastTemperatureF,
+                    waterStatus: "n/a",
+                    imuMatrix: nil,
+                    imuSamples: [imu9],
+                    finElapsedTimeDeciseconds: finMs / 100
                 )
             }
         }
