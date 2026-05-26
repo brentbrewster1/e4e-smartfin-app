@@ -6,10 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		E9C657A82F3A9B1800F881CA /* smartfinwatchos Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = E9C657882F3A9B1600F881CA /* smartfinwatchos Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		E94552912F2361CB0013CD80 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -55,7 +51,6 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
-				E9C657A82F3A9B1800F881CA /* smartfinwatchos Watch App.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -63,12 +58,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		E94552812F2361C90013CD80 /* smartfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = smartfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		E94552902F2361CB0013CD80 /* smartfinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = smartfinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		E945529A2F2361CB0013CD80 /* smartfinUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = smartfinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		E9C657882F3A9B1600F881CA /* smartfinwatchos Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "smartfinwatchos Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		E9C657942F3A9B1800F881CA /* smartfinwatchos Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "smartfinwatchos Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		E9C6579E2F3A9B1800F881CA /* smartfinwatchos Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "smartfinwatchos Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD7609352FB7C776002CD6DD /* smartfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = smartfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD7609362FB7C776002CD6DD /* smartfinwatchos Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "smartfinwatchos Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD7609372FB7C776002CD6DD /* smartfinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = smartfinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD7609382FB7C776002CD6DD /* smartfinUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = smartfinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD7609392FB7C776002CD6DD /* smartfinwatchos Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "smartfinwatchos Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD76093A2FB7C776002CD6DD /* smartfinwatchos Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "smartfinwatchos Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -76,6 +71,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				ServerManager.swift,
 				SessionManager.swift,
 			);
 			target = E94552802F2361C90013CD80 /* smartfin */;
@@ -85,6 +81,7 @@
 			membershipExceptions = (
 				BluetoothManager.swift,
 				NetworkManager.swift,
+				ServerManager.swift,
 				SessionManager.swift,
 			);
 			target = E9C657872F3A9B1600F881CA /* smartfinwatchos Watch App */;
@@ -183,21 +180,13 @@
 				E9C657892F3A9B1600F881CA /* smartfinwatchos Watch App */,
 				E9C657972F3A9B1800F881CA /* smartfinwatchos Watch AppTests */,
 				E9C657A12F3A9B1800F881CA /* smartfinwatchos Watch AppUITests */,
-				E94552822F2361C90013CD80 /* Products */,
+				FD7609352FB7C776002CD6DD /* smartfin.app */,
+				FD7609362FB7C776002CD6DD /* smartfinwatchos Watch App.app */,
+				FD7609372FB7C776002CD6DD /* smartfinTests.xctest */,
+				FD7609382FB7C776002CD6DD /* smartfinUITests.xctest */,
+				FD7609392FB7C776002CD6DD /* smartfinwatchos Watch AppTests.xctest */,
+				FD76093A2FB7C776002CD6DD /* smartfinwatchos Watch AppUITests.xctest */,
 			);
-			sourceTree = "<group>";
-		};
-		E94552822F2361C90013CD80 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				E94552812F2361C90013CD80 /* smartfin.app */,
-				E94552902F2361CB0013CD80 /* smartfinTests.xctest */,
-				E945529A2F2361CB0013CD80 /* smartfinUITests.xctest */,
-				E9C657882F3A9B1600F881CA /* smartfinwatchos Watch App.app */,
-				E9C657942F3A9B1800F881CA /* smartfinwatchos Watch AppTests.xctest */,
-				E9C6579E2F3A9B1800F881CA /* smartfinwatchos Watch AppUITests.xctest */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -225,7 +214,7 @@
 			packageProductDependencies = (
 			);
 			productName = smartfin;
-			productReference = E94552812F2361C90013CD80 /* smartfin.app */;
+			productReference = FD7609352FB7C776002CD6DD /* smartfin.app */;
 			productType = "com.apple.product-type.application";
 		};
 		E945528F2F2361CB0013CD80 /* smartfinTests */ = {
@@ -248,7 +237,7 @@
 			packageProductDependencies = (
 			);
 			productName = smartfinTests;
-			productReference = E94552902F2361CB0013CD80 /* smartfinTests.xctest */;
+			productReference = FD7609372FB7C776002CD6DD /* smartfinTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		E94552992F2361CB0013CD80 /* smartfinUITests */ = {
@@ -271,7 +260,7 @@
 			packageProductDependencies = (
 			);
 			productName = smartfinUITests;
-			productReference = E945529A2F2361CB0013CD80 /* smartfinUITests.xctest */;
+			productReference = FD7609382FB7C776002CD6DD /* smartfinUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		E9C657872F3A9B1600F881CA /* smartfinwatchos Watch App */ = {
@@ -294,7 +283,7 @@
 			packageProductDependencies = (
 			);
 			productName = "smartfinwatchos Watch App";
-			productReference = E9C657882F3A9B1600F881CA /* smartfinwatchos Watch App.app */;
+			productReference = FD7609362FB7C776002CD6DD /* smartfinwatchos Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 		E9C657932F3A9B1800F881CA /* smartfinwatchos Watch AppTests */ = {
@@ -317,7 +306,7 @@
 			packageProductDependencies = (
 			);
 			productName = "smartfinwatchos Watch AppTests";
-			productReference = E9C657942F3A9B1800F881CA /* smartfinwatchos Watch AppTests.xctest */;
+			productReference = FD7609392FB7C776002CD6DD /* smartfinwatchos Watch AppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		E9C6579D2F3A9B1800F881CA /* smartfinwatchos Watch AppUITests */ = {
@@ -340,7 +329,7 @@
 			packageProductDependencies = (
 			);
 			productName = "smartfinwatchos Watch AppUITests";
-			productReference = E9C6579E2F3A9B1800F881CA /* smartfinwatchos Watch AppUITests.xctest */;
+			productReference = FD76093A2FB7C776002CD6DD /* smartfinwatchos Watch AppUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -387,7 +376,7 @@
 			mainGroup = E94552782F2361C90013CD80;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = E94552822F2361C90013CD80 /* Products */;
+			productRefGroup = E94552782F2361C90013CD80;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (

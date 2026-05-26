@@ -20,7 +20,7 @@ struct SessionDetailView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     DetailRow(label: "Duration", value: session.formattedDuration)
                     DetailRow(label: "Samples", value: "\(session.samplesCollected)")
-                    DetailRow(label: "Avg Temp", value: String(format: "%.1f°F", session.averageTemp))
+                    DetailRow(label: "Avg Temp", value: String(format: "%.1f°F", session.averageTemp ?? "N/A"))
                     DetailRow(label: "Device", value: session.deviceName)
                 }
             }
@@ -34,7 +34,9 @@ struct SessionDetailView: View {
     SessionDetailView(
         session: SessionData(
             id: UUID(),
-            date: Date(),
+            serverId: 1,
+            startedAt: Date(),
+            endedAt: Date(),
             duration: 3600,
             samplesCollected: 150,
             averageTemp: 72.5,

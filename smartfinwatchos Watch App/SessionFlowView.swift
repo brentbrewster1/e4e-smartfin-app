@@ -68,7 +68,7 @@ struct SessionFlowView: View {
                     sessionManager: sessionManager,
                     onSave: {
                         Task {
-                            await sessionManager.saveSession()
+                            //sessionManager.saveSessionLocal()
                             sessionState = .history
                         }
                     }
@@ -81,7 +81,9 @@ struct SessionFlowView: View {
                         sessionState = .ready
                         sessionManager.reset()
                     }
-                )
+                ).task {
+                    await sessionManager.syncData()
+                }
             }
         }
         .onChange(of: bluetoothManager.isConnected) { connected in

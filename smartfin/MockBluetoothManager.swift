@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// A very small simulator-only mock that subclasses `BluetoothManager` and
 /// publishes synthetic readings so the UI can be exercised in the Simulator.
@@ -66,7 +67,7 @@ class MockBluetoothManager: BluetoothManager {
         }
     }
 
-    deinit {
+    @MainActor deinit {
         timer?.invalidate()
         timer = nil
     }

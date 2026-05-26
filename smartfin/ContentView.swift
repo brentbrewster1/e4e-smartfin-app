@@ -58,9 +58,11 @@ struct ContentView: View {
                     .cornerRadius(12)
                     .padding(.horizontal)
                     // Auto-scroll to bottom when new data arrives
-                    .onChange(of: bleManager.dataLog.count) { _ in
+                    .onChange(of: bleManager.dataLog.count) { oldCount, newCount in
                         withAnimation {
-                            proxy.scrollTo(bleManager.dataLog.count - 1, anchor: .bottom)
+                            if newCount > 0 {
+                                proxy.scrollTo(newCount - 1, anchor: .bottom)
+                            }
                         }
                     }
                 }

@@ -6,6 +6,7 @@
 //
 import Foundation
 import CoreBluetooth
+import Combine
 
 /// A lightweight mock of `BluetoothManager` used for SwiftUI previews and the
 /// watch simulator. It subclasses the real `BluetoothManager` and overrides
@@ -55,7 +56,7 @@ class MockBluetoothManager: BluetoothManager {
         }
     }
 
-    deinit {
+    @MainActor deinit {
         timer?.invalidate()
         timer = nil
     }
