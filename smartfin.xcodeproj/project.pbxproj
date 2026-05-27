@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		CB33A9D12F9F490800CF6E4E /* SmartfinBridge-iOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB33A9CF2F9F490800CF6E4C /* SmartfinBridge-iOS.xcframework */; };
 		CB33A9D22F9F490800CF6E4F /* SmartfinBridge-watchOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB33A9D02F9F490800CF6E4D /* SmartfinBridge-watchOS.xcframework */; };
+		CB33A9D32F9F490800CF6E50 /* SmartfinBridge-iOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB33A9CF2F9F490800CF6E4C /* SmartfinBridge-iOS.xcframework */; };
 		E9C657A82F3A9B1800F881CA /* smartfinwatchos Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = E9C657882F3A9B1600F881CA /* smartfinwatchos Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -65,14 +66,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CB33A9CF2F9F490800CF6E4C /* SmartfinBridge-iOS.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = "SmartfinBridge-iOS.xcframework"; sourceTree = "<group>"; };
+		CB33A9D02F9F490800CF6E4D /* SmartfinBridge-watchOS.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = "SmartfinBridge-watchOS.xcframework"; sourceTree = "<group>"; };
 		E94552812F2361C90013CD80 /* smartfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = smartfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E94552902F2361CB0013CD80 /* smartfinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = smartfinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E945529A2F2361CB0013CD80 /* smartfinUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = smartfinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9C657882F3A9B1600F881CA /* smartfinwatchos Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "smartfinwatchos Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9C657942F3A9B1800F881CA /* smartfinwatchos Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "smartfinwatchos Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9C6579E2F3A9B1800F881CA /* smartfinwatchos Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "smartfinwatchos Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		CB33A9CF2F9F490800CF6E4C /* SmartfinBridge-iOS.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = SmartfinBridge-iOS.xcframework; sourceTree = "<group>"; };
-		CB33A9D02F9F490800CF6E4D /* SmartfinBridge-watchOS.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = SmartfinBridge-watchOS.xcframework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -80,7 +81,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				smartfin-Bridging-Header.h,
 			);
 			target = E94552802F2361C90013CD80 /* smartfin */;
 		};
@@ -91,7 +91,6 @@
 				BluetoothManager.swift,
 				DecodedFinEnsemble.swift,
 				DetailRow.swift,
-				SmartfinNativeDecoder.swift,
 				FinConnectionViews.swift,
 				NetworkManager.swift,
 				ReadyView.swift,
@@ -104,6 +103,7 @@
 				SessionReadingRecord.swift,
 				SessionRowView.swift,
 				SessionState.swift,
+				SmartfinNativeDecoder.swift,
 			);
 			target = E9C657872F3A9B1600F881CA /* smartfinwatchos Watch App */;
 		};
@@ -159,6 +159,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CB33A9D32F9F490800CF6E50 /* SmartfinBridge-iOS.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -200,7 +201,6 @@
 				CB33A9CF2F9F490800CF6E4C /* SmartfinBridge-iOS.xcframework */,
 				CB33A9D02F9F490800CF6E4D /* SmartfinBridge-watchOS.xcframework */,
 			);
-			name = Vendor;
 			path = Vendor;
 			sourceTree = "<group>";
 		};
@@ -238,6 +238,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E94552A42F2361CB0013CD80 /* Build configuration list for PBXNativeTarget "smartfin" */;
 			buildPhases = (
+				CB33A9D42F9F490800CF6E51 /* Verify Vendor Bridge */,
 				CBE1F2E72FA3025A0047732F /* ShellScript */,
 				E945527D2F2361C90013CD80 /* Sources */,
 				E945527E2F2361C90013CD80 /* Frameworks */,
@@ -309,6 +310,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E9C657B02F3A9B1800F881CA /* Build configuration list for PBXNativeTarget "smartfinwatchos Watch App" */;
 			buildPhases = (
+				CB33A9D52F9F490800CF6E52 /* Verify Vendor Bridge */,
 				CBE1F2E82FA304540047732F /* ShellScript */,
 				E9C657842F3A9B1600F881CA /* Sources */,
 				E9C657852F3A9B1600F881CA /* Frameworks */,
@@ -478,6 +480,44 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		CB33A9D42F9F490800CF6E51 /* Verify Vendor Bridge */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Verify Vendor Bridge";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nIOS_SIM=\"${SRCROOT}/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64_x86_64-simulator/libsmartfin-iphonesimulator.a\"\nIOS_DEV=\"${SRCROOT}/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64/libsmartfin-iphoneos.a\"\nif [ ! -f \"$IOS_SIM\" ]; then\n  IOS_SIM=\"${SRCROOT}/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64-simulator/libsmartfin-iphonesimulator.a\"\nfi\nfor lib in \"$IOS_SIM\" \"$IOS_DEV\"; do\n  if [ ! -f \"$lib\" ]; then\n    echo \"error: missing $lib — run ./scripts/build_smartfin_xcframework.sh\" >&2\n    exit 1\n  fi\ndone\n";
+		};
+		CB33A9D52F9F490800CF6E52 /* Verify Vendor Bridge */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Verify Vendor Bridge";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "WATCH_LIB=\"${SRCROOT}/Vendor/SmartfinBridge-watchOS.xcframework/watchos-arm64_x86_64-simulator/libsmartfin-watchsimulator.a\"\nDEVICE_LIB=\"${SRCROOT}/Vendor/SmartfinBridge-watchOS.xcframework/watchos-arm64/libsmartfin-watchos.a\"\nif [ ! -f \"$WATCH_LIB\" ] || [ ! -f \"$DEVICE_LIB\" ]; then\n  echo \"error: missing watchOS Vendor libraries. Run: ./scripts/build_smartfin_xcframework.sh\" >&2\n  exit 1\nfi\n";
+		};
 		CBE1F2E72FA3025A0047732F /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -718,7 +758,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GYZU7L3PA6;
+				DEVELOPMENT_TEAM = 97MWT575V3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = smartfin/Info.plist;
@@ -737,6 +777,18 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
+				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64/libsmartfin-iphoneos.a",
+				);
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64_x86_64-simulator/libsmartfin-iphonesimulator.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.engineers4exploration.smartfin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -758,7 +810,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GYZU7L3PA6;
+				DEVELOPMENT_TEAM = 97MWT575V3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = smartfin/Info.plist;
@@ -777,6 +829,18 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
+				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64/libsmartfin-iphoneos.a",
+				);
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64_x86_64-simulator/libsmartfin-iphonesimulator.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.engineers4exploration.smartfin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -801,11 +865,28 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64/libsmartfin-iphoneos.a",
+				);
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64_x86_64-simulator/libsmartfin-iphonesimulator.a",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.engineers4exploration.smartfinTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "smartfin/smartfin-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -823,11 +904,28 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64/libsmartfin-iphoneos.a",
+				);
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-iOS.xcframework/ios-arm64_x86_64-simulator/libsmartfin-iphonesimulator.a",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.engineers4exploration.smartfinTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "smartfin/smartfin-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -882,7 +980,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GYZU7L3PA6;
+				DEVELOPMENT_TEAM = 97MWT575V3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = smartfinwatchos;
@@ -896,6 +994,18 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
+				);
+				"OTHER_LDFLAGS[sdk=watchos*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-watchOS.xcframework/watchos-arm64/libsmartfin-watchos.a",
+				);
+				"OTHER_LDFLAGS[sdk=watchsimulator*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-watchOS.xcframework/watchos-arm64_x86_64-simulator/libsmartfin-watchsimulator.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.engineers4exploration.smartfin.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -920,7 +1030,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GYZU7L3PA6;
+				DEVELOPMENT_TEAM = 97MWT575V3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = smartfinwatchos;
@@ -934,6 +1044,18 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
+				);
+				"OTHER_LDFLAGS[sdk=watchos*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-watchOS.xcframework/watchos-arm64/libsmartfin-watchos.a",
+				);
+				"OTHER_LDFLAGS[sdk=watchsimulator*]" = (
+					"$(inherited)",
+					"-lc++",
+					"-force_load",
+					"$(PROJECT_DIR)/Vendor/SmartfinBridge-watchOS.xcframework/watchos-arm64_x86_64-simulator/libsmartfin-watchsimulator.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.engineers4exploration.smartfin.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
