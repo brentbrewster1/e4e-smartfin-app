@@ -11,7 +11,14 @@ import SwiftData
 
 @main
 struct smartfinApp: App {
-    @StateObject private var syncDataManager = SyncDataManager()
+    @StateObject private var sessionManager: SessionManager
+    @StateObject private var syncDataManager: SyncDataManager
+
+    init() {
+        let sessions = SessionManager()
+        _sessionManager = StateObject(wrappedValue: sessions)
+        _syncDataManager = StateObject(wrappedValue: SyncDataManager(sessionManager: sessions))
+    }
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -30,6 +37,7 @@ struct smartfinApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(syncDataManager)
+                .environmentObject(sessionManager)
         }
         .modelContainer(sharedModelContainer)
     }

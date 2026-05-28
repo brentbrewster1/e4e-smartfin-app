@@ -85,7 +85,7 @@ struct SessionFlowView: View {
 
             case .history:
                 SessionHistoryView(
-                    sessions: sessionManager.savedSessions,
+                    sessionManager: sessionManager,
                     onNewSession: {
                         sessionState = .ready
                         sessionManager.reset()

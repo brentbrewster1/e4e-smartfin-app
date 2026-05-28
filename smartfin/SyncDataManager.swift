@@ -25,7 +25,7 @@ final class SyncDataManager: NSObject, ObservableObject {
 		static let sessions = "sessions"
 	}
 
-	private let sessionManager: SessionManager
+	let sessionManager: SessionManager
 	private let decoder: JSONDecoder
 
 	init(sessionManager: SessionManager = SessionManager()) {

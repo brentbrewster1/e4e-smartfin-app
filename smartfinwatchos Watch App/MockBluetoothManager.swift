@@ -45,18 +45,17 @@ class MockBluetoothManager: BluetoothManager {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             self.sampleIndex += 1
-            let temp = 58.0 + Double(Int.random(in: 0...200)) / 10.0
-            self.currentTemperature = temp
-            self.waterStatus = (self.sampleIndex % 6 == 0) ? "in-water" : "dry"
-            let msg = String(format: "[Watch Mock] sample %03d — temp=%.1f, water=%@", self.sampleIndex, self.currentTemperature, self.waterStatus)
-            DispatchQueue.main.async {
-                self.dataLog.append(msg)
-                if self.dataLog.count > 500 { self.dataLog.removeFirst(self.dataLog.count - 500) }
-            }
+            let celsius = 18.0 + Double(self.sampleIndex % 8)
+            let waterRaw: UInt8 = self.sampleIndex % 6 == 0 ? 1 : 0
+            let packet = SmartFinTelemetryDecoder.makeDemoTemperaturePacket(
+                celsius: celsius,
+                waterRaw: waterRaw
+            )
+            self.processTelemetryData(packet)
         }
     }
 
-    @MainActor deinit {
+    deinit {
         timer?.invalidate()
         timer = nil
     }

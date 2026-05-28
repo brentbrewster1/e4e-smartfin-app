@@ -30,16 +30,20 @@ struct ActiveSessionView: View {
                     .font(.system(size: 33, weight: .semibold))
                     .foregroundColor(.white)
             }
-            
-            // GPS Status
-            HStack(spacing: 2) {
-                Text("GPS")
-                    .font(.caption)
+
+            Text(sessionManager.waterStatus.capitalized)
+                .font(.caption2)
+                .foregroundColor(sessionManager.waterStatus == "in-water" ? .blue : .orange)
+
+            if let imu = sessionManager.lastIMU9, imu.count >= 3 {
+                Text(String(format: "a %.1f %.1f %.1f", imu[0], imu[1], imu[2]))
+                    .font(.system(size: 10, design: .monospaced))
                     .foregroundColor(.gray)
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.caption)
-                    .foregroundColor(.green)
             }
+
+            Text("\(sessionManager.samplesCollected) samples")
+                .font(.caption2)
+                .foregroundColor(.gray)
             
             Spacer()
             

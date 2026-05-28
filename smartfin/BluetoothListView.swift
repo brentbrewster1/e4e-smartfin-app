@@ -67,6 +67,20 @@ struct BluetoothListView: View {
                 }
             }
             .navigationTitle("Connect Device")
+            .onAppear {
+                if bleManager is MockBluetoothManager {
+                    return
+                }
+                bleManager.startScanning()
+            }
+            .onDisappear {
+                if bleManager is MockBluetoothManager {
+                    return
+                }
+                if !bleManager.isConnected {
+                    bleManager.stopSessionScan()
+                }
+            }
         }
     }
 }
