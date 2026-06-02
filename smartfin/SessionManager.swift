@@ -192,6 +192,10 @@ class SessionManager: NSObject, ObservableObject {
 
     // Handle incoming ensembles (simplified for frontend)
     private func handleEnsemble(ensembleType: String, temperature: Double, waterStatus: String, imuMatrix: [Double]?, imuSamples: [[Double]]?, timestamp: Date) {
+        // Only record ensembles while a session is active. Bluetooth manager may emit
+        // updates outside of an active session (e.g. mock/simulator), so guard here
+        // to avoid growing the session sample list after the session has ended.
+        guard isSessionActive else { return }
         currentTemperature = temperature
         
         // Encode imu data as JSON string if present

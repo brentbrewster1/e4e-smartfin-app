@@ -45,7 +45,7 @@ class MockBluetoothManager: BluetoothManager {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             self.sampleIndex += 1
-            let temp = 58.0 + Double(Int.random(in: 0...200)) / 10.0
+            let temp = 58.0 + Double(Int.random(in: 0...100)) / 10.0
             self.currentTemperature = temp
             self.waterStatus = (self.sampleIndex % 6 == 0) ? "in-water" : "dry"
             let msg = String(format: "[Watch Mock] sample %03d — temp=%.1f, water=%@", self.sampleIndex, self.currentTemperature, self.waterStatus)
