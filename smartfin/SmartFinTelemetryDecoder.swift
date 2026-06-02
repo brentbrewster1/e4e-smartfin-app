@@ -25,18 +25,33 @@ enum SmartFinTelemetryDecoder {
         }
     }
 
+    /// Tries transport-wrapped packets first, then raw ensemble payload (some firmware omits the 6-byte header).
     static func decodePacket(_ data: Data) -> [DecodedFinEnsemble] {
-        guard data.count >= 6 else { return [] }
+        if let wrapped = decodeTransportWrapped(data), !wrapped.isEmpty {
+            return wrapped
+        }
+        if data.count >= 3 {
+            let direct = parsePayload(data)
+            if !direct.isEmpty {
+                return direct
+            }
+        }
+        return []
+    }
+
+    private static func decodeTransportWrapped(_ data: Data) -> [DecodedFinEnsemble]? {
+        guard data.count >= 6 else { return nil }
 
         let payloadLength = Int(readUInt16LE(data, offset: 4))
         let payloadStart = 6
         let payloadEnd = min(data.count, payloadStart + max(0, payloadLength))
-        guard payloadEnd > payloadStart else { return [] }
+        guard payloadEnd > payloadStart else { return nil }
 
-        return parsePayload(data.subdata(in: payloadStart..<payloadEnd))
+        let parsed = parsePayload(data.subdata(in: payloadStart..<payloadEnd))
+        return parsed.isEmpty ? nil : parsed
     }
 
-    private static func parsePayload(_ payload: Data) -> [DecodedFinEnsemble] {
+    static func parsePayload(_ payload: Data) -> [DecodedFinEnsemble] {
         var ensembles: [DecodedFinEnsemble] = []
         var offset = 0
 

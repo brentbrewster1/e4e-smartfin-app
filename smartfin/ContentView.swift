@@ -37,9 +37,14 @@ struct ContentView: View {
                 .foregroundColor(bleManager.isConnected ? .green : .gray)
 
             if sessionManager.isSessionActive {
-                Text("Recording session — \(sessionManager.formattedElapsedTime)")
-                    .font(.subheadline)
-                    .foregroundColor(.orange)
+                VStack(spacing: 4) {
+                    Text("Recording session — \(sessionManager.formattedElapsedTime)")
+                        .font(.subheadline)
+                        .foregroundColor(.orange)
+                    Text("\(sessionManager.samplesCollected) samples saved · \(bleManager.packetsReceived) BLE packets")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
 
             if bleManager.isConnected || bleManager is MockBluetoothManager {
@@ -259,6 +264,12 @@ struct ContentView: View {
                     .font(.system(size: 56, weight: .bold, design: .rounded))
                 Text("°F")
                     .font(.title2)
+                    .foregroundColor(.secondary)
+            }
+
+            if bleManager.packetsReceived == 0 {
+                Text("Waiting for telemetry from fin…")
+                    .font(.caption)
                     .foregroundColor(.secondary)
             }
 

@@ -33,6 +33,21 @@ struct SmartFinTelemetryDecoderTests {
         #expect(ensembles.isEmpty)
     }
 
+    @Test func decodePayloadWithoutTransportHeader() {
+        // Raw 0x01 ensemble only (6 bytes) — no 6-byte transport wrapper.
+        let hex = "010000000501"
+        let data = dataFromHex(hex)
+        let ensembles = SmartFinTelemetryDecoder.decodePacket(data)
+
+        #expect(ensembles.count == 1)
+        guard case .temperatureWater(_, let celsius, let waterRaw) = ensembles[0] else {
+            Issue.record("Expected temperatureWater ensemble")
+            return
+        }
+        #expect(celsius == 10.0)
+        #expect(waterRaw == 1)
+    }
+
     @Test func decodeDemoPacketBuilder() {
         let data = SmartFinTelemetryDecoder.makeDemoTemperaturePacket(celsius: 22.0, waterRaw: 0)
         let ensembles = SmartFinTelemetryDecoder.decodePacket(data)
