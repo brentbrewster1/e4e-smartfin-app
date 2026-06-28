@@ -8,8 +8,12 @@
 import SwiftUI
 
 struct SessionHistoryView: View {
-    let sessions: [SessionData]
+    @ObservedObject var sessionManager: SessionManager
     let onNewSession: () -> Void
+
+    private var sessions: [SessionData] {
+        sessionManager.savedSessions
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -26,7 +30,12 @@ struct SessionHistoryView: View {
                     ScrollView {
                         LazyVStack(spacing: 5, pinnedViews: []) {
                             ForEach(sessions.sorted(by: { $0.endedAt > $1.endedAt })) { session in
-                                NavigationLink(destination: SessionDetailView(session: session)) {
+                                NavigationLink(
+                                    destination: SessionDetailView(
+                                        session: session,
+                                        readings: sessionManager.readings(for: session.id)
+                                    )
+                                ) {
                                     SessionRowView(session: session)
                                         .padding(.horizontal, 4).padding(.vertical, 2)
                                 }
@@ -56,28 +65,6 @@ struct SessionHistoryView: View {
 }
 
 #Preview {
-    SessionHistoryView(
-        sessions: [SessionData(
-            id: UUID(),
-            serverId: nil,
-            startedAt: Date(),
-            endedAt: Date(),
-            duration: 3600,
-            samplesCollected: 150,
-            averageTemp: 72.5,
-            deviceName: "Smart Fin"
-        ),
-       SessionData(
-           id: UUID(),
-           serverId: nil,
-           startedAt: Date(),
-           endedAt: Date(),
-           duration: 3600,
-           samplesCollected: 150,
-           averageTemp: 72.5,
-           deviceName: "Smart Fin"
-       ),
-        ],
-        onNewSession: {}
-    )
+    let manager = SessionManager()
+    return SessionHistoryView(sessionManager: manager, onNewSession: {})
 }

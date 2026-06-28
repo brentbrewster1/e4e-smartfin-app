@@ -3,6 +3,7 @@
 //  smartfin
 //
 //  Created by Angie Nguyen on 5/14/26.
+//  This file manages communication with the server, including uploading session data and handling server responses.
 //
 
 import Foundation

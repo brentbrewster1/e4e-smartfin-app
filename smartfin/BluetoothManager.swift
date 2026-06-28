@@ -1,3 +1,9 @@
+//  BluetoothManager.swift
+//  smartfin
+//
+//  This file manages Bluetooth connectivity, including scanning for devices, connecting, and handling data transfer.
+//
+
 import Foundation
 import CoreBluetooth
 import Combine
@@ -7,22 +13,29 @@ class BluetoothManager: NSObject, ObservableObject {
     @Published var discoveredPeripherals: [CBPeripheral] = []
     @Published var connectedDevice: CBPeripheral?
     @Published var isConnected: Bool = false
-    @Published var connectionStatus: String = "Searching for SmartFin..."
+    @Published var connectionStatus: String = "Bluetooth starting..."
     @Published var currentTemperature: Double = 67.0
     @Published var waterStatus: String = "unknown"
+    @Published var lastIMU9: [Double]?
     @Published var batteryLevel: Int = 100
     @Published var dataLog: [String] = []
+    @Published private(set) var packetsReceived: Int = 0
+    var onDecodedEnsembles: (([DecodedFinEnsemble]) -> Void)?
     
     // MARK: - Core Bluetooth
     var centralManager: CBCentralManager?
     private var smartFinCharacteristic: CBCharacteristic?
+    private var telemetryPollTimer: Timer?
+    private var discoveredStreamCandidates: [CBCharacteristic] = []
+    private var servicesAwaitingCharacteristics = 0
     // Keep a strong reference to the peripheral we're attempting to connect to
     private var pendingPeripheral: CBPeripheral?
+    @Published private(set) var isSessionScanActive = false
+    private var sessionScanAutoConnect = false
     
     // MARK: - Service & Characteristic UUIDs
-    // Update these with actual SmartFin UUIDs (leave as placeholder for previews)
     private let smartFinServiceUUIDString = "SF-SERVICE-UUID"
-    private let smartFinCharacteristicUUIDString = "SF-CHARACTERISTIC-UUID"
+    private let smartFinCharacteristicUUIDString = SmartFinTelemetryDecoder.telemetryCharacteristicUUID
 
     // Parsed CBUUIDs (nil when placeholder/invalid)
     private lazy var smartFinServiceUUID: CBUUID? = {
@@ -63,23 +76,75 @@ class BluetoothManager: NSObject, ObservableObject {
         }
     }
     
+    // MARK: - SmartFin device identification
+
+    static func isSmartFinName(_ name: String?) -> Bool {
+        guard let name, !name.isEmpty else { return false }
+        return name.range(of: "smartfin", options: .caseInsensitive) != nil
+    }
+
+    func isSmartFinDevice(peripheral: CBPeripheral, advertisementData: [String: Any] = [:]) -> Bool {
+        if Self.isSmartFinName(peripheral.name) { return true }
+        if let localName = advertisementData[CBAdvertisementDataLocalNameKey] as? String {
+            return Self.isSmartFinName(localName)
+        }
+        return false
+    }
+
     // MARK: - Scanning
+
+    /// Scan initiated from the home screen connect flow. Autoconnects when exactly one SmartFin is found.
+    func startSessionScan(autoConnect: Bool = true) {
+        beginScan(clearDiscovered: true, statusMessage: "Scanning for SmartFin...", autoConnect: autoConnect)
+    }
+
+    /// Scan initiated from the manual device picker (no autoconnect).
     func startScanning() {
+        beginScan(clearDiscovered: true, statusMessage: "Searching for SmartFin...", autoConnect: false)
+    }
+
+    func stopSessionScan() {
+        sessionScanAutoConnect = false
+        isSessionScanActive = false
+        centralManager?.stopScan()
+    }
+
+    func stopScanning() {
+        stopSessionScan()
+    }
+
+    private func beginScan(clearDiscovered: Bool, statusMessage: String, autoConnect: Bool) {
         guard centralManager?.state == .poweredOn else {
             connectionStatus = "Bluetooth is not available"
             return
         }
-        
-        discoveredPeripherals.removeAll()
-        connectionStatus = "Searching for SmartFin..."
+
+        if clearDiscovered {
+            discoveredPeripherals.removeAll()
+        }
+        sessionScanAutoConnect = autoConnect
+        isSessionScanActive = true
+        connectionStatus = statusMessage
         appendToDataLog("Started scanning for SmartFin devices")
-        
-        // Scan for all peripherals (or filter by service UUID if we have it)
+
         centralManager?.scanForPeripherals(withServices: nil, options: nil)
     }
-    
-    func stopScanning() {
-        centralManager?.stopScan()
+
+    private func tryAutoConnectIfSingleMatch() {
+        guard sessionScanAutoConnect, isSessionScanActive, !isConnected, pendingPeripheral == nil else { return }
+
+        let matches = discoveredPeripherals
+        if matches.count > 1 {
+            sessionScanAutoConnect = false
+            connectionStatus = "Multiple SmartFin devices found — choose one"
+            return
+        }
+
+        guard matches.count == 1, let peripheral = matches.first else { return }
+
+        sessionScanAutoConnect = false
+        isSessionScanActive = false
+        connect(to: peripheral)
     }
 
     // Simple logger to keep a running stream of status / data messages for the UI
@@ -95,7 +160,9 @@ class BluetoothManager: NSObject, ObservableObject {
     
     // MARK: - Connection
     func connect(to peripheral: CBPeripheral) {
-        stopScanning()
+        sessionScanAutoConnect = false
+        isSessionScanActive = false
+        centralManager?.stopScan()
         connectionStatus = "Connecting to \(peripheral.name ?? "SmartFin")..."
         appendToDataLog("Connecting to \(peripheral.name ?? "SmartFin")")
         // Retain the peripheral while connection is in progress and ensure we
@@ -106,6 +173,9 @@ class BluetoothManager: NSObject, ObservableObject {
     }
     
     func disconnect() {
+        stopTelemetryPolling()
+        sessionScanAutoConnect = false
+        isSessionScanActive = false
         guard let device = connectedDevice else { return }
         centralManager?.cancelPeripheralConnection(device)
         isConnected = false
@@ -128,8 +198,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
-            connectionStatus = "Bluetooth ready"
-            startScanning()
+            connectionStatus = "Bluetooth ready — tap Connect to SmartFin"
         case .poweredOff:
             connectionStatus = "Bluetooth is off"
         case .unauthorized:
@@ -142,13 +211,15 @@ extension BluetoothManager: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        // Filter for SmartFin devices
-        if let name = peripheral.name, name.contains("SmartFin") || name.contains("Smartfin") {
-            // Avoid duplicates
-            if !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) {
-                discoveredPeripherals.append(peripheral)
-                appendToDataLog("Discovered: \(name) (RSSI: \(RSSI))")
-            }
+        guard isSmartFinDevice(peripheral: peripheral, advertisementData: advertisementData) else { return }
+
+        if !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) {
+            let displayName = peripheral.name
+                ?? (advertisementData[CBAdvertisementDataLocalNameKey] as? String)
+                ?? "SmartFin"
+            discoveredPeripherals.append(peripheral)
+            appendToDataLog("Discovered: \(displayName) (RSSI: \(RSSI))")
+            tryAutoConnectIfSingleMatch()
         }
     }
     
@@ -157,6 +228,9 @@ extension BluetoothManager: CBCentralManagerDelegate {
         // Clear pending and promote to connectedDevice
         pendingPeripheral = nil
         connectedDevice = peripheral
+        smartFinCharacteristic = nil
+        discoveredStreamCandidates.removeAll()
+        servicesAwaitingCharacteristics = 0
         connectionStatus = "Connected to \(peripheral.name ?? "SmartFin")"
         appendToDataLog("Connected to \(peripheral.name ?? "SmartFin")")
         
@@ -180,6 +254,11 @@ extension BluetoothManager: CBCentralManagerDelegate {
             connectedDevice = nil
         }
         pendingPeripheral = nil
+        smartFinCharacteristic = nil
+        stopTelemetryPolling()
+        packetsReceived = 0
+        discoveredStreamCandidates.removeAll()
+        servicesAwaitingCharacteristics = 0
         
         if let error = error {
             connectionStatus = "Disconnected: \(error.localizedDescription)"
@@ -193,105 +272,183 @@ extension BluetoothManager: CBCentralManagerDelegate {
 // MARK: - CBPeripheralDelegate
 extension BluetoothManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        if let error = error {
+            appendToDataLog("Service discovery failed: \(error.localizedDescription)")
+            return
+        }
+
         guard let services = peripheral.services else { return }
+        appendToDataLog("Discovered \(services.count) service(s)")
+
+        discoveredStreamCandidates.removeAll()
+        servicesAwaitingCharacteristics = services.count
 
         for service in services {
-            // If we have a configured temperature characteristic UUID, request only that one.
-            // Otherwise request all characteristics so we can inspect them.
-            let charsToDiscover = smartFinCharacteristicUUID != nil ? [smartFinCharacteristicUUID!] : nil
-            peripheral.discoverCharacteristics(charsToDiscover, for: service)
+            appendToDataLog("Service: \(service.uuid.uuidString)")
+            peripheral.discoverCharacteristics(nil, for: service)
         }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        if let error = error {
+            appendToDataLog("Characteristic discovery failed for \(service.uuid.uuidString): \(error.localizedDescription)")
+            return
+        }
+
         guard let characteristics = service.characteristics else { return }
+        appendToDataLog("Found \(characteristics.count) characteristic(s) for \(service.uuid.uuidString)")
 
         for characteristic in characteristics {
-            if let tempUUID = smartFinCharacteristicUUID {
-                if characteristic.uuid == tempUUID {
-                    smartFinCharacteristic = characteristic
-                    setupNotifications(for: peripheral)
-                    peripheral.readValue(for: characteristic)
-                    break
-                }
-            } else {
-                // No configured UUID — assume the first characteristic might be temperature
-                smartFinCharacteristic = characteristic
-                setupNotifications(for: peripheral)
-                peripheral.readValue(for: characteristic)
-                break
+            let props = characteristic.properties
+            let propNames = [
+                props.contains(.read) ? "read" : nil,
+                props.contains(.write) ? "write" : nil,
+                props.contains(.notify) ? "notify" : nil,
+                props.contains(.indicate) ? "indicate" : nil
+            ].compactMap { $0 }.joined(separator: ",")
+            appendToDataLog("  · \(characteristic.uuid.uuidString) [\(propNames)]")
+
+            if props.contains(.notify) || props.contains(.indicate) || props.contains(.read) {
+                discoveredStreamCandidates.append(characteristic)
             }
+        }
+
+        servicesAwaitingCharacteristics = max(0, servicesAwaitingCharacteristics - 1)
+        if servicesAwaitingCharacteristics == 0 {
+            finalizeTelemetryCharacteristicSelection(on: peripheral)
         }
     }
 
+    private func finalizeTelemetryCharacteristicSelection(on peripheral: CBPeripheral) {
+        guard smartFinCharacteristic == nil else { return }
+
+        if let preferred = discoveredStreamCandidates.first(where: { $0.uuid == smartFinCharacteristicUUID }) {
+            selectTelemetryCharacteristic(preferred, peripheral: peripheral)
+            return
+        }
+
+        if let stream = discoveredStreamCandidates.first(where: {
+            $0.properties.contains(.notify) || $0.properties.contains(.indicate)
+        }) {
+            appendToDataLog("Telemetry UUID not found; using \(stream.uuid.uuidString)")
+            selectTelemetryCharacteristic(stream, peripheral: peripheral)
+            return
+        }
+
+        appendToDataLog("No suitable telemetry characteristic found")
+    }
+
+    private func selectTelemetryCharacteristic(_ characteristic: CBCharacteristic, peripheral: CBPeripheral) {
+        smartFinCharacteristic = characteristic
+        let props = characteristic.properties
+        appendToDataLog("Selected stream: \(characteristic.uuid.uuidString)")
+
+        setupNotifications(for: peripheral)
+
+        if props.contains(.read) {
+            peripheral.readValue(for: characteristic)
+            startTelemetryPolling(for: peripheral)
+        } else {
+            appendToDataLog("Notify-only — listening (no read/poll)")
+        }
+    }
+
+    private func startTelemetryPolling(for peripheral: CBPeripheral) {
+        guard let characteristic = smartFinCharacteristic,
+              characteristic.properties.contains(.read) else { return }
+
+        telemetryPollTimer?.invalidate()
+        telemetryPollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            guard let self,
+                  let characteristic = self.smartFinCharacteristic,
+                  characteristic.properties.contains(.read),
+                  self.isConnected else { return }
+            peripheral.readValue(for: characteristic)
+        }
+        appendToDataLog("Polling read every 2s")
+    }
+
+    private func stopTelemetryPolling() {
+        telemetryPollTimer?.invalidate()
+        telemetryPollTimer = nil
+    }
+
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        if let error = error {
+            let message = error.localizedDescription
+            if message.localizedCaseInsensitiveContains("not permitted")
+                || message.localizedCaseInsensitiveContains("not allowed") {
+                stopTelemetryPolling()
+                return
+            }
+            appendToDataLog("Value update error for \(characteristic.uuid.uuidString): \(message)")
+            return
+        }
+
         // Only attempt parsing if this matches our temperature characteristic (or if we don't have one configured)
         if smartFinCharacteristic == nil || characteristic.uuid == smartFinCharacteristic?.uuid {
             if let data = characteristic.value {
-                // Log raw payload for easier debugging
-                appendToDataLog("Raw payload: \(hexString(from: data))")
-
-                // Simplified parsing for frontend:
-                // - If payload >= 5 bytes and first byte looks like ensemble ID, parse temp from bytes 1..4
-                // - Otherwise if payload >= 4, parse temp from bytes 0..3 (legacy float)
-                // - Do not attempt IMU parsing here (unknown format). Leave imuMatrix/imuSamples empty.
-                simpleParsePayload(data)
+                processTelemetryData(data)
             }
             else{
-                appendToDataLog("data != characteristic.value")
+                appendToDataLog("Value update contained nil data for \(characteristic.uuid.uuidString)")
 
             }
             
         }
         else{
-            appendToDataLog("smartFinCharacteristic == nil || characteristic.uuid == smartFinCharacteristic?.uuid")
+            let selectedUUID = smartFinCharacteristic?.uuid.uuidString ?? String("nil")
+            appendToDataLog("Ignoring value for non-selected characteristic \(characteristic.uuid.uuidString); selected=\(selectedUUID)")
         }
     }
                 
-    // MARK: - Simplified payload parsing for frontend
-    private func simpleParsePayload(_ data: Data) {
-        // Very simple parsing for frontend only:
-        // - If payload >=5 bytes: assume [id:1][temp:4] and optional water byte at index 5
-        // - Else if payload >=4: assume legacy float at start
-        // - Do not attempt to extract IMU data here
-        let count = data.count
-        if count >= 5 {
-            // temp bytes are 1..4
-            let tempData = data.subdata(in: 1..<5)
-            let u32 = UInt32(littleEndian: tempData.withUnsafeBytes { $0.load(as: UInt32.self) })
-            let f = Float(bitPattern: u32)
-            currentTemperature = Double(f)
+    func processTelemetryData(_ data: Data) {
+        DispatchQueue.main.async {
+            self.packetsReceived += 1
+        }
 
-            if count >= 6 {
-                let w = data[5]
-                waterStatus = (w == 0) ? "dry" : "in-water"
+        appendToDataLog("RX \(data.count) bytes: \(hexString(from: data))")
+
+        let ensembles = SmartFinTelemetryDecoder.decodePacket(data)
+
+        if ensembles.isEmpty {
+            appendToDataLog("Decode: no ensembles — check firmware format")
+            return
+        }
+
+        DispatchQueue.main.async {
+            for ensemble in ensembles {
+                switch ensemble {
+                case .temperatureWater(_, let celsius, let waterRaw):
+                    let tempF = SmartFinTelemetryDecoder.fahrenheit(fromCelsius: celsius)
+                    self.currentTemperature = tempF
+                    self.waterStatus = SmartFinTelemetryDecoder.waterStatusString(from: waterRaw)
+                    self.appendToDataLog(
+                        String(format: "Temp %.0f°F · %@", tempF, self.waterStatus)
+                    )
+                case .highRateIMU(_, let imu9):
+                    self.lastIMU9 = imu9
+                    if imu9.count >= 3 {
+                        self.appendToDataLog(
+                            String(format: "IMU ax=%.2f ay=%.2f az=%.2f", imu9[0], imu9[1], imu9[2])
+                        )
+                    }
+                }
             }
-
-            appendToDataLog("Parsed payload: temp=\(String(format: "%.2f", currentTemperature)), water=\(waterStatus)")
-            return
+            self.onDecodedEnsembles?(ensembles)
         }
-
-        if count >= 4 {
-            let u32 = UInt32(littleEndian: data.withUnsafeBytes { $0.load(as: UInt32.self) })
-            let f = Float(bitPattern: u32)
-            currentTemperature = Double(f)
-            appendToDataLog(String(format: "Parsed legacy temp: %.2f°F", currentTemperature))
-            return
-        }
-
-        appendToDataLog("Payload too short to parse: \(hexString(from: data))")
     }
 
     // Data -> hex string helper for logging
-    private func hexString(from data: Data) -> String {
+    func hexString(from data: Data) -> String {
         return data.map { String(format: "%02x", $0) }.joined()
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         if let error = error {
-            print("Notification state update error: \(error.localizedDescription)")
+            appendToDataLog("Notification state error for \(characteristic.uuid.uuidString): \(error.localizedDescription)")
         } else {
-            print("Notifications enabled for: \(characteristic.uuid)")
+            appendToDataLog("Notifications enabled for: \(characteristic.uuid.uuidString)")
         }
     }
 }
