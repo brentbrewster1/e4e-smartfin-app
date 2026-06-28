@@ -58,7 +58,7 @@ class MockBluetoothManager: BluetoothManager {
         }
     }
 
-    deinit {
+    @MainActor deinit {
         timer?.invalidate()
         timer = nil
     }

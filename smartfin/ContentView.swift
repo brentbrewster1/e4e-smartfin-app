@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreBluetooth
 
 struct ContentView: View {
     @EnvironmentObject var syncDataManager: SyncDataManager
