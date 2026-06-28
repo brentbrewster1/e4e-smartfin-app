@@ -103,15 +103,17 @@ enum SmartFinTelemetryDecoder {
     }
 
     private static func readUInt16LE(_ data: Data, offset: Int) -> UInt16 {
-        data.withUnsafeBytes { buffer in
-            buffer.load(fromByteOffset: offset, as: UInt16.self)
-        }.littleEndian
+        // Avoid using `load(as:)` on potentially misaligned pointers (can crash on some architectures).
+        // Assemble from bytes to be safe on any alignment.
+        guard offset + 1 < data.count else { return 0 }
+        let b0 = UInt16(data[offset])
+        let b1 = UInt16(data[offset + 1]) << 8
+        return b0 | b1
     }
 
     private static func readInt16LE(_ data: Data, offset: Int) -> Int16 {
-        data.withUnsafeBytes { buffer in
-            buffer.load(fromByteOffset: offset, as: Int16.self)
-        }.littleEndian
+        let u = readUInt16LE(data, offset: offset)
+        return Int16(bitPattern: u)
     }
 
     private static func readUInt24LE(_ data: Data, offset: Int) -> UInt32 {

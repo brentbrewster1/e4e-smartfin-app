@@ -42,7 +42,7 @@ struct WatchTransferSession: Codable {
 }
 
 struct WatchTransferEnsemble: Codable {
-    let ensembleClientId: UUID
+    let clientEnsembleId: UUID
     let clientSessionId: UUID
     let ensembleType: String
     let temperature: Double
@@ -53,8 +53,8 @@ struct WatchTransferEnsemble: Codable {
 
     func toEnsembleReading(serverId: Int? = nil) -> EnsembleReading {
         EnsembleReading(
-            ensembleClientId: ensembleClientId,
-            id: clientSessionId,
+            clientEnsembleId: clientEnsembleId,
+            clientSessionId: clientSessionId,
             serverId: serverId,
             ensembleType: ensembleType,
             temperature: temperature,

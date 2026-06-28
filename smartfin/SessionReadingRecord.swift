@@ -45,8 +45,8 @@ extension SessionReadingRecord {
         }
 
         return EnsembleReading(
-            ensembleClientId: id,
-            id: sessionId,
+            clientEnsembleId: id,
+            clientSessionId: sessionId,
             serverId: nil,
             ensembleType: ensembleType,
             temperature: temperature ?? 0,

@@ -248,8 +248,8 @@ class SessionManager: NSObject, ObservableObject {
         currentTemperature = 67.0 + tempVariation
 
         let ensemble = EnsembleReading(
-            ensembleClientId: UUID(),
-            id: clientSessionId,
+            clientEnsembleId: UUID(),
+            clientSessionId: clientSessionId,
             serverId: nil,
             ensembleType: "01",
             temperature: currentTemperature,
@@ -281,8 +281,8 @@ class SessionManager: NSObject, ObservableObject {
         }
         
         let ensemble = EnsembleReading(
-            ensembleClientId: UUID(),
-            id: clientSessionId,
+            clientEnsembleId: UUID(),
+            clientSessionId: clientSessionId,
             serverId: nil,
             ensembleType: ensembleType,
             temperature: temperature,
@@ -321,7 +321,7 @@ class SessionManager: NSObject, ObservableObject {
     // MARK: - Ensemble Saving
     func saveEnsembleLocal() {
         for ensemble in ensemblesInCurrentSession {
-            if !savedEnsembles.contains(where: { $0.ensembleClientId == ensemble.ensembleClientId }) {
+            if !savedEnsembles.contains(where: { $0.clientEnsembleId == ensemble.clientEnsembleId }) {
                 savedEnsembles.append(ensemble)
             }
         }
@@ -387,7 +387,7 @@ class SessionManager: NSObject, ObservableObject {
         let sessions = savedSessions.map { session in
             let storedReadings = readingStore.loadReadings(sessionId: session.id)
             let ensembles = storedReadings.isEmpty
-                ? savedEnsembles.filter { $0.id == session.id }
+                ? savedEnsembles.filter { $0.clientSessionId == session.id }
                 : storedReadings.map { $0.toEnsembleReading(sessionId: session.id) }
             return session.toTransferSession(ensembles: ensembles)
         }
@@ -440,7 +440,7 @@ class SessionManager: NSObject, ObservableObject {
 
         for ensemble in ensembles {
             let incoming = ensemble.toEnsembleReading()
-            if let existingIndex = merged.firstIndex(where: { $0.ensembleClientId == incoming.ensembleClientId }) {
+            if let existingIndex = merged.firstIndex(where: { $0.clientEnsembleId == incoming.clientEnsembleId }) {
                 let preservedServerId = merged[existingIndex].serverId
                 merged[existingIndex] = incoming
                 merged[existingIndex].serverId = preservedServerId
@@ -464,11 +464,9 @@ class SessionManager: NSObject, ObservableObject {
 
             let ensemble = savedEnsembles[ensembleIndex]
 
-            // Find corresponding session
-            guard let session = savedSessions.first(where: {
-                $0.id == ensemble.id
-            }) else {
-                print("Missing local session for ensemble \(ensemble.id)")
+            // Find corresponding session by the ensemble's client session id
+            guard let session = savedSessions.first(where: { $0.id == ensemble.clientSessionId }) else {
+                print("Missing local session for ensemble with clientSessionId \(ensemble.clientSessionId)")
                 continue
             }
             
@@ -485,7 +483,7 @@ class SessionManager: NSObject, ObservableObject {
                 savedEnsembles[ensembleIndex].serverId = serverId
 
             } catch {
-                print("Failed to upload ensemble \(ensemble.id): \(error)")
+                print("Failed to upload ensemble \(ensemble.clientEnsembleId): \(error)")
             }
         }
 
@@ -564,8 +562,8 @@ class SessionManager: NSObject, ObservableObject {
                    let remoteServerId = remote.serverId {
                     return localServerId == remoteServerId
                 }
-                // Otherwise match local UUIDs
-                return local.id == remote.id
+                // Otherwise match local UUIDs (match ensembles by their client ensemble id)
+                return local.clientEnsembleId == remote.clientEnsembleId
             }
 
             if let index = existingIndex {
@@ -628,8 +626,8 @@ extension SessionManager: CLLocationManagerDelegate {
 
 // MARK: - Data Models for Server Upload
 struct EnsembleReading: Codable {
-    let ensembleClientId: UUID
-    let id: UUID
+    let clientEnsembleId: UUID
+    let clientSessionId: UUID
     var serverId: Int? // nil if not uploaded to server (or haven't received a response)
     let ensembleType: String
     let temperature: Double
@@ -639,8 +637,8 @@ struct EnsembleReading: Codable {
     let timestamp: Date
 
     enum CodingKeys: String, CodingKey {
-        case ensembleClientId = "ensemble_client_id"
-        case id = "client_session_id"
+        case clientEnsembleId = "ensemble_client_id"
+        case clientSessionId = "client_session_id"
         case serverId = "id"
         case ensembleType = "ensemble_type"
         case temperature
@@ -651,8 +649,8 @@ struct EnsembleReading: Codable {
     }
 
     init(
-        ensembleClientId: UUID,
-        id: UUID,
+        clientEnsembleId: UUID,
+        clientSessionId: UUID,
         serverId: Int?,
         ensembleType: String,
         temperature: Double,
@@ -661,8 +659,8 @@ struct EnsembleReading: Codable {
         imuData: Data?,
         timestamp: Date
     ) {
-        self.ensembleClientId = ensembleClientId
-        self.id = id
+        self.clientEnsembleId = clientEnsembleId
+        self.clientSessionId = clientSessionId
         self.serverId = serverId
         self.ensembleType = ensembleType
         self.temperature = temperature
@@ -674,8 +672,8 @@ struct EnsembleReading: Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        ensembleClientId = try container.decodeIfPresent(UUID.self, forKey: .ensembleClientId) ?? UUID()
-        id = try container.decode(UUID.self, forKey: .id)
+        clientEnsembleId = try container.decodeIfPresent(UUID.self, forKey: .clientEnsembleId) ?? UUID()
+        clientSessionId = try container.decode(UUID.self, forKey: .clientSessionId)
         serverId = try container.decodeIfPresent(Int.self, forKey: .serverId)
         ensembleType = try container.decode(String.self, forKey: .ensembleType)
         temperature = try container.decode(Double.self, forKey: .temperature)
@@ -708,8 +706,8 @@ extension SessionData {
 extension EnsembleReading {
     func toTransferEnsemble() -> WatchTransferEnsemble {
         WatchTransferEnsemble(
-            ensembleClientId: ensembleClientId,
-            clientSessionId: id,
+            clientEnsembleId: clientEnsembleId,
+            clientSessionId: clientSessionId,
             ensembleType: ensembleType,
             temperature: temperature,
             waterStatus: waterStatus,
@@ -732,7 +730,8 @@ struct ServerEnsemble: Codable {
 
     func toEnsembleReading() -> EnsembleReading {
         EnsembleReading(
-            id: UUID(), // generate local UUID since server id is Int
+            clientEnsembleId: UUID(),
+            clientSessionId: UUID(), // generate local UUID since server id is Int
             serverId: id,
             ensembleType: ensemble_type,
             temperature: temperature ?? 0.0,
