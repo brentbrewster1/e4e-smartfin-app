@@ -529,7 +529,7 @@ class SessionManager: NSObject, ObservableObject {
         }
     }
     
-    func merge(_ remoteSessions: [SessionData]) {
+    func mergeSessions(_ remoteSessions: [SessionData]) {
         var merged = savedSessions
         
         for remote in remoteSessions {
@@ -553,11 +553,37 @@ class SessionManager: NSObject, ObservableObject {
         savedSessions = merged
     }
     
+    func mergeEnsembles(_ remoteEnsembles: [EnsembleReading]) {
+        var merged = savedEnsembles
+
+        for remote in remoteEnsembles {
+
+            let existingIndex = merged.firstIndex { local in
+                // Prefer matching server IDs when available
+                if let localServerId = local.serverId,
+                   let remoteServerId = remote.serverId {
+                    return localServerId == remoteServerId
+                }
+                // Otherwise match local UUIDs
+                return local.id == remote.id
+            }
+
+            if let index = existingIndex {
+                merged[index] = remote
+            } else {
+                // not stored locally! safe to just add to list
+                merged.append(remote)
+            }
+        }
+
+        savedEnsembles = merged
+    }
+    
     // Get remote sessions, save locally if not already. Upload any session not yet in the server.
     func syncSessions() async {
         do {
             let remoteSessions = try await serverManager.getSessions()
-            merge(remoteSessions)
+            mergeSessions(remoteSessions)
 
             await uploadPendingSessions()
 
@@ -570,10 +596,13 @@ class SessionManager: NSObject, ObservableObject {
     
     func syncEnsembles() async {
         do {
-            // TODO: Pull from remote, merge with locally stored ensembles
+            let remoteEnsembles = try await serverManager.getEnsembles()
+            mergeEnsembles(remoteEnsembles)
 
             await uploadPendingEnsembles()
             saveEnsemblesToDisk()
+        } catch {
+            print(error)
         }
     }
     
@@ -687,6 +716,30 @@ extension EnsembleReading {
             geoCoordinates: geoCoordinates,
             imuDataBase64: imuData?.base64EncodedString(),
             timestamp: timestamp
+        )
+    }
+}
+
+struct ServerEnsemble: Codable {
+    let id: Int
+    let session_id: String
+    let ensemble_type: String
+    let temperature: Double?
+    let water_status: String?
+    let gps: String?
+    let imu: String?
+    let timestamp: Date?
+
+    func toEnsembleReading() -> EnsembleReading {
+        EnsembleReading(
+            id: UUID(), // generate local UUID since server id is Int
+            serverId: id,
+            ensembleType: ensemble_type,
+            temperature: temperature ?? 0.0,
+            waterStatus: water_status ?? "Unknown",
+            geoCoordinates: gps,
+            imuData: imu?.data(using: .utf8),
+            timestamp: timestamp ?? Date()
         )
     }
 }
