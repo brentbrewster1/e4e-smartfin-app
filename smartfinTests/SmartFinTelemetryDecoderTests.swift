@@ -9,8 +9,12 @@ import Testing
 
 struct SmartFinTelemetryDecoderTests {
 
+    // Vectors below follow smartfin-fw3's packed structs: 6-byte transport header,
+    // then ensembles with a 4-byte header (type in low 4 bits, elapsed ms above).
+
     @Test func decodeGoldenTemperaturePacket() throws {
-        let hex = "010000000600010000000501"
+        // Transport: v1, telemetry, seq 0, len 7 | Ens 0x01 @ 5000 ms | 18.5 C (2368) | wet
+        let hex = "010100000700" + "81380100" + "4009" + "01"
         let data = dataFromHex(hex)
         let ensembles = SmartFinTelemetryDecoder.decodePacket(data)
 
@@ -21,11 +25,11 @@ struct SmartFinTelemetryDecoderTests {
             return
         }
 
-        #expect(finElapsedDs == 0)
-        #expect(celsius == 10.0)
+        #expect(finElapsedDs == 50) // 5000 ms -> 50 ds
+        #expect(celsius == 18.5)
         #expect(waterRaw == 1)
         #expect(SmartFinTelemetryDecoder.waterStatusString(from: waterRaw) == "in-water")
-        #expect(SmartFinTelemetryDecoder.fahrenheit(fromCelsius: celsius) == 50.0)
+        #expect(SmartFinTelemetryDecoder.fahrenheit(fromCelsius: celsius) == 65.3)
     }
 
     @Test func decodeEmptyWhenTooShort() {
@@ -33,19 +37,35 @@ struct SmartFinTelemetryDecoderTests {
         #expect(ensembles.isEmpty)
     }
 
-    @Test func decodePayloadWithoutTransportHeader() {
-        // Raw 0x01 ensemble only (6 bytes) — no 6-byte transport wrapper.
-        let hex = "010000000501"
-        let data = dataFromHex(hex)
-        let ensembles = SmartFinTelemetryDecoder.decodePacket(data)
+    @Test func imuOnlyPacketYieldsNoTemperature() {
+        // One 36-byte 0x0D (IMU+quat) record. Must not be misread as a temperature.
+        let hex = "010100002400" + "0d000000" + String(repeating: "00", count: 32)
+        let ensembles = SmartFinTelemetryDecoder.decodePacket(dataFromHex(hex))
+        #expect(ensembles.isEmpty)
+    }
+
+    @Test func temperatureAfterImuRecordIsDecoded() {
+        // 0x0D record @ 4950 ms (skipped), then 0x01 @ 5000 ms, 18.5 C, wet. len 43.
+        let hex = "010100002b00" + "6d350100" + String(repeating: "00", count: 32)
+            + "81380100" + "4009" + "01"
+        let ensembles = SmartFinTelemetryDecoder.decodePacket(dataFromHex(hex))
 
         #expect(ensembles.count == 1)
-        guard case .temperatureWater(_, let celsius, let waterRaw) = ensembles[0] else {
+        guard case .temperatureWater(let finElapsedDs, let celsius, let waterRaw) = ensembles[0] else {
             Issue.record("Expected temperatureWater ensemble")
             return
         }
-        #expect(celsius == 10.0)
+        #expect(finElapsedDs == 50)
+        #expect(celsius == 18.5)
         #expect(waterRaw == 1)
+    }
+
+    @Test func truncatedPacketDropsPartialEnsemble() {
+        // Same packet as above but cut off right after the temperature ensemble's 4-byte
+        // header (as an MTU-limited notification would be). No crash, no partial reading.
+        let hex = "010100002b00" + "6d350100" + String(repeating: "00", count: 32) + "81380100"
+        let ensembles = SmartFinTelemetryDecoder.decodePacket(dataFromHex(hex))
+        #expect(ensembles.isEmpty)
     }
 
     @Test func decodeDemoPacketBuilder() {

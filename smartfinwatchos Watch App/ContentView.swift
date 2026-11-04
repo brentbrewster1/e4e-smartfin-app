@@ -142,6 +142,16 @@ struct ConnectionView: View {
                 bluetoothManager.startScanning()
             }
         }
+        .onChange(of: bluetoothManager.connectionStatus) { _, _ in
+            // Bluetooth usually reports .poweredOn after this view appears, so
+            // onAppear alone misses it on launch. Start the scan once it's ready.
+            guard !(bluetoothManager is MockBluetoothManager),
+                  bluetoothManager.centralManager?.state == .poweredOn,
+                  !bluetoothManager.isSessionScanActive,
+                  !bluetoothManager.isConnected,
+                  bluetoothManager.discoveredPeripherals.isEmpty else { return }
+            bluetoothManager.startScanning()
+        }
     }
 }
 

@@ -837,6 +837,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = smartfinwatchos;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Please allow Smartfin to connect via Bluetooth for data transmission.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.engineers4exploration.smartfin;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -870,6 +871,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = smartfinwatchos;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Please allow Smartfin to connect via Bluetooth for data transmission.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.engineers4exploration.smartfin;
 				LD_RUNPATH_SEARCH_PATHS = (
